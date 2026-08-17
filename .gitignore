@@ -1,25 +1,5 @@
-
-
-# Python
 __pycache__/
 *.pyc
+.env
 .venv/
 venv/
-
-# Logs
-logs/
-*.log
-
-# Chroma databases
-chroma_db/
-chroma_db_bge/
-
-# Models / large files
-*.gguf
-
-# OS
-.DS_Store
-Thumbs.db
-# IDE
-.vscode/
-.idea/

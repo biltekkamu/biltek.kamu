@@ -1,2 +1,0 @@
-# biltek.kamu
-kamu proje
