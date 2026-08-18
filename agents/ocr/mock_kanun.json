@@ -1,0 +1,60 @@
+{
+  "success": true,
+  "document_info": {
+    "document_id": "mock_doc_01",
+    "file_name": "7068_Sayili_Kanun.pdf",
+    "file_type": "pdf",
+    "page_count": 1,
+    "language": "tr"
+  },
+  "input": {
+    "clean_text": "7068 SAYILI KANUNA EK VE DEĞİŞİKLİK GETİREN MEVZUATIN VEYA ANAYASA MAHKEMESİ İPTAL KARARLARININ YÜRÜRLÜĞE GİRİŞ TARİHLERİNİ GÖSTERİR LİSTE",
+    "metadata": {
+      "sayi": "7068",
+      "tarih": "26/10/2018",
+      "konu": "7068 SAYILI KANUNA EK VE DEĞİŞİKLİK GETİREN MEVZUAT LİSTESİ",
+      "recipient": null
+    },
+    "tables": [
+      {
+        "page_number": 1,
+        "headers": [
+          "Değiştiren Kanunun/KHK'nin veya İptal Eden Anayasa Mahkemesi Kararının Numarası",
+          "Kanunun Değişen veya İptal Edilen Maddeleri",
+          "Yürürlüğe Giriş Tarihi"
+        ],
+        "rows": [
+          [
+            "7148",
+            "8, 10, 14, 19, 20, 21, 26, 27, 34, Geçici Madde 1, Ekli (3) Sayılı Çizelge",
+            "26/10/2018"
+          ],
+          [
+            "7161",
+            "8, Geçici Madde 2",
+            "18/1/2019"
+          ],
+          [
+            "7196",
+            "17, 18, 21, 24, Ekli (3) Sayılı Çizelge",
+            "24/12/2019"
+          ],
+          [
+            "Anayasa Mahkemesinin 26/1/2022 tarihli ve E.:2021/22; K.:2022/6 sayılı kararı",
+            "8",
+            "1/4/2022"
+          ],
+          [
+            "7533",
+            "8, 29",
+            "30/11/2024"
+          ]
+        ]
+      }
+    ],
+    "vision": {
+      "has_signature": false,
+      "has_stamp": false
+    }
+  }
+}
