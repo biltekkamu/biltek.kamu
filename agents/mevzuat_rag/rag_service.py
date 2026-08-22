@@ -13,7 +13,7 @@ from ollama import Client
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
-from config import (
+from .config import (
     CHROMA_COLLECTION,
     CHROMA_DB_DIR,
     EMBEDDING_MODEL,
@@ -322,6 +322,7 @@ Kurallar:
 - Sorunun anlamını değiştirme.
 - Kullanıcının önemli anahtar kelimelerini koru.
 - Uygun hukuki terimleri ekle.
+- Soruda veya belge bağlamında açıkça belirtilen kanun ve madde numaralarını aynen koru ve sorgudan çıkarma.
 - Emin olmadığın kanun veya madde numarasını uydurma.
 - Soruyu cevaplama.
 - Açıklama yapma.
@@ -358,7 +359,7 @@ Arama sorgusu:
                 }
             ],
             options={
-                "temperature": 0.1
+                "temperature": 0.0
             },
         )
 
@@ -395,51 +396,69 @@ Arama sorgusu:
 # =========================================================
 
 def retrieve_documents(
-        
     question: str,
     top_k: int = TOP_K,
 ) -> list[dict[str, Any]]:
-    
 
-    
-    
     t_start = time.time()
 
     if collection.count() == 0:
         return []
-    # -----------------------------------------
-    # Query Transformation
-    # -----------------------------------------
 
-    legal_query = transform_query(question)
+    # =====================================================
+    # 1. QUERY TRANSFORMATION
+    # =====================================================
+
+    legal_query = transform_query(
+        question
+    )
 
     logger.info(
         "Query Transformation: %.2fs",
-        time.time() - t_start
+        time.time() - t_start,
     )
-    
-    search_query = f"{question} {legal_query}"
-    
+
+    search_query = (
+        f"{question} {legal_query}"
+    ).strip()
+
     logger.info(
-    "Search query: %s",
-    search_query,
-)
+        "Search query: %s",
+        search_query,
+    )
 
-    
-    
+    # =====================================================
+    # 2. QUERY TOKENS
+    # =====================================================
 
-    # -----------------------------------------
-    # Semantic Search
-    # -----------------------------------------
+    query_tokens = {
+        token.strip(
+            ".,:;!?()[]{}\"'"
+        )
+        for token in search_query
+        .lower()
+        .split()
+        if len(token) > 2
+    }
+
+    # =====================================================
+    # 3. SEMANTIC SEARCH
+    # =====================================================
+
     t_semantic = time.time()
-    query_embedding = embedding_model.encode(   
+
+    query_embedding = embedding_model.encode(
         search_query,
         normalize_embeddings=True,
     ).tolist()
-    
 
+    # Önceden top_k * 3 idi.
+    # Daha fazla aday alıyoruz ki temel madde erken kaybolmasın.
     candidate_count = min(
-        top_k * 3,
+        max(
+            top_k * 8,
+            30,
+        ),
         collection.count(),
     )
 
@@ -457,36 +476,28 @@ def retrieve_documents(
 
     logger.info(
         "Semantic Search: %.2fs",
-        time.time() - t_semantic
+        time.time() - t_semantic,
     )
 
     sem_docs = (
-    sem_results[
-        "documents"
-    ][0]
-)
+        sem_results["documents"][0]
+    )
 
     sem_metas = (
-    sem_results[
-        "metadatas"
-    ][0]
-)
+        sem_results["metadatas"][0]
+    )
 
     sem_dists = (
-    sem_results[
-        "distances"
-    ][0]
-)
+        sem_results["distances"][0]
+    )
 
     sem_ids = (
-    sem_results[
-        "ids"
-    ][0]
-)
+        sem_results["ids"][0]
+    )
 
-    # -----------------------------------------
-    # BM25
-    # -----------------------------------------
+    # =====================================================
+    # 4. BM25
+    # =====================================================
 
     bm25_top_idx = []
 
@@ -496,8 +507,7 @@ def retrieve_documents(
     ):
 
         bm25_scores = (
-            _bm25_index
-            .get_scores(
+            _bm25_index.get_scores(
                 search_query
                 .lower()
                 .split()
@@ -511,9 +521,9 @@ def retrieve_documents(
             ][::-1]
         )
 
-    # -----------------------------------------
-    # RRF
-    # -----------------------------------------
+    # =====================================================
+    # 5. RRF
+    # =====================================================
 
     rrf_scores: dict[
         str,
@@ -525,7 +535,9 @@ def retrieve_documents(
         dict,
     ] = {}
 
-    # Semantic Results
+    # -------------------------
+    # Semantic candidates
+    # -------------------------
 
     for rank, (
         document,
@@ -565,7 +577,9 @@ def retrieve_documents(
             "score": 0.0,
         }
 
-    # BM25 Results
+    # -------------------------
+    # BM25 candidates
+    # -------------------------
 
     for rank, index in enumerate(
         bm25_top_idx,
@@ -586,10 +600,7 @@ def retrieve_documents(
             + 1 / (60 + rank)
         )
 
-        if (
-            document_id
-            not in doc_map
-        ):
+        if document_id not in doc_map:
 
             doc_map[
                 document_id
@@ -609,9 +620,12 @@ def retrieve_documents(
                 "score": 0.0,
             }
 
-    # -----------------------------------------
-    # Sort RRF candidates
-    # -----------------------------------------
+    if not rrf_scores:
+        return []
+
+    # =====================================================
+    # 6. RRF SORT
+    # =====================================================
 
     ranked = sorted(
         rrf_scores.items(),
@@ -619,23 +633,23 @@ def retrieve_documents(
         reverse=True,
     )
 
-    max_rrf = (
-        max(
-            rrf_scores.values()
-        )
-        if rrf_scores
-        else 1.0
+    max_rrf = max(
+        rrf_scores.values()
     )
 
     retrieved = []
 
-    # ناخد مرشحين أكثر قبل reranking
+    # Reranker öncesinde de daha geniş aday havuzu.
+    pre_rerank_limit = min(
+        top_k * 8,
+        len(ranked),
+    )
 
     for (
         document_id,
         rrf_score,
     ) in ranked[
-        : top_k * 3
+        :pre_rerank_limit
     ]:
 
         item = doc_map[
@@ -646,13 +660,6 @@ def retrieve_documents(
             "distance"
         )
 
-        # إذا نتيجة Semantic:
-        # طبق MAX_DISTANCE.
-        #
-        # إذا BM25 فقط:
-        # distance = None
-        # لا نحذفها بسبب threshold.
-
         if (
             distance is not None
             and distance > MAX_DISTANCE
@@ -661,7 +668,7 @@ def retrieve_documents(
 
         item["score"] = round(
             rrf_score / max_rrf,
-            3,
+            4,
         )
 
         retrieved.append(
@@ -671,28 +678,216 @@ def retrieve_documents(
     if not retrieved:
         return []
 
-    # -----------------------------------------
-    # Reranking
-    # -----------------------------------------
+    # =====================================================
+    # 7. RERANKING
+    # =====================================================
+
     t_rerank = time.time()
 
-    retrieved = rerank_documents(
-        question,
-        retrieved,
-        top_n=top_k,
+    # Final top_k'ya hemen düşürmüyoruz.
+    # Önce daha fazla sonucu rerank ediyoruz.
+    rerank_count = min(
+        top_k * 3,
+        len(retrieved),
     )
+
+    retrieved = rerank_documents(
+        search_query,
+        retrieved,
+        top_n=rerank_count,
+    )
+
     logger.info(
         "Reranker: %.2fs",
-        time.time() - t_rerank
+        time.time() - t_rerank,
     )
+
+    # =====================================================
+    # 8. LEGAL + LEXICAL BOOST
+    # =====================================================
+
+    for document in retrieved:
+
+        metadata = (
+            document.get(
+                "metadata",
+                {}
+            )
+            or {}
+        )
+
+        text = document.get(
+            "text",
+            "",
+        )
+
+        law_name = str(
+            metadata.get(
+                "law_name",
+                ""
+            )
+        )
+
+        law_number = str(
+            metadata.get(
+                "law_number",
+                ""
+            )
+        )
+
+        article = str(
+            metadata.get(
+                "madde",
+                ""
+            )
+        )
+
+        searchable_text = (
+            f"{law_name} "
+            f"{law_number} "
+            f"{article} "
+            f"{text}"
+        ).lower()
+
+        document_tokens = {
+            token.strip(
+                ".,:;!?()[]{}\"'"
+            )
+            for token
+            in searchable_text.split()
+            if len(token) > 2
+        }
+
+        # Query ile doğrudan kelime örtüşmesi
+        overlap = (
+            query_tokens
+            & document_tokens
+        )
+
+        lexical_score = (
+            len(overlap)
+            / max(
+                len(query_tokens),
+                1,
+            )
+        )
+
+        rerank_score = float(
+            document.get(
+                "rerank_score",
+                0.0,
+            )
+        )
+
+        rrf_score = float(
+            document.get(
+                "score",
+                0.0,
+            )
+        )
+
+        # Eğer query içinde kanun/madde açıkça geçiyorsa
+        # ilgili belgeye ekstra boost.
+        explicit_boost = 0.0
+
+        if (
+            law_number
+            and law_number
+            in search_query
+        ):
+            explicit_boost += 1.0
+
+        if article:
+
+            article_patterns = [
+                f"madde {article}",
+                f"Madde {article}",
+                f" {article} ",
+            ]
+
+            if any(
+                pattern.lower()
+                in (
+                    " "
+                    + search_query.lower()
+                    + " "
+                )
+                for pattern
+                in article_patterns
+            ):
+                explicit_boost += 1.5
+
+        # Final hybrid skor
+        document[
+            "final_score"
+        ] = (
+            rerank_score
+            + (rrf_score * 1.5)
+            + (lexical_score * 2.0)
+            + explicit_boost
+        )
+
+    # =====================================================
+    # 9. FINAL SORT
+    # =====================================================
+
+    retrieved = sorted(
+        retrieved,
+        key=lambda item: item.get(
+            "final_score",
+            0.0,
+        ),
+        reverse=True,
+    )
+
+    retrieved = retrieved[
+        :top_k
+    ]
 
     logger.info(
         "TOTAL RETRIEVAL: %.2fs",
-        time.time() - t_start
+        time.time() - t_start,
     )
 
+    # Debug için çok faydalı
+    for index, document in enumerate(
+        retrieved,
+        start=1,
+    ):
+
+        metadata = (
+            document.get(
+                "metadata",
+                {}
+            )
+            or {}
+        )
+
+        logger.info(
+            "TOP %d | Kanun=%s | Madde=%s | "
+            "RRF=%.3f | Rerank=%.3f | Final=%.3f",
+            index,
+            metadata.get(
+                "law_number"
+            ),
+            metadata.get(
+                "madde"
+            ),
+            document.get(
+                "score",
+                0.0,
+            ),
+            document.get(
+                "rerank_score",
+                0.0,
+            ),
+            document.get(
+                "final_score",
+                0.0,
+            ),
+        )
+
     return retrieved
-    
 
 # =========================================================
 # Context
@@ -907,15 +1102,104 @@ def generate_answer(
     history: list[dict] | None = None,
 ) -> str:
 
+    # =====================================================
+    # 1. Context oluştur
+    # =====================================================
+
     context = build_context(
         documents
     )
 
+    # =====================================================
+    # 2. Retrieved kaynakları açık şekilde LLM'e bildir
+    # =====================================================
+
+    source_lines = []
+
+    for index, doc in enumerate(
+        documents,
+        start=1,
+    ):
+        metadata = doc.get(
+            "metadata",
+            {},
+        )
+
+        law_name = metadata.get(
+            "law_name",
+            metadata.get(
+                "document_name",
+                "Bilinmeyen Kaynak",
+            ),
+        )
+
+        law_number = metadata.get(
+            "law_number",
+            "",
+        )
+
+        article = metadata.get(
+            "madde",
+            "",
+        )
+
+        source_lines.append(
+            f"{index}. "
+            f"Kanun: {law_name} | "
+            f"Kanun No: {law_number} | "
+            f"Madde: {article}"
+        )
+
+    allowed_sources = "\n".join(
+        source_lines
+    )
+
+    # =====================================================
+    # 3. LLM'e sıkı kaynak kuralları ekle
+    # =====================================================
+
+    guarded_question = f"""
+KULLANICI SORUSU:
+{question}
+
+KULLANILMASINA İZİN VERİLEN MEVZUAT KAYNAKLARI:
+{allowed_sources}
+
+ZORUNLU KURALLAR:
+
+1. Yalnızca yukarıdaki retrieved kaynakları ve verilen CONTEXT'i kullan.
+
+2. Kaynaklarda bulunmayan hiçbir kanun numarası,
+   madde numarası veya hukuki hüküm üretme.
+
+3. Bir kanun veya maddeyi cevapta kullanacaksan,
+   bunun retrieved kaynaklarda açıkça bulunması zorunludur.
+
+4. Soruyla doğrudan ilişkili olan kaynaklara öncelik ver.
+
+5. Belge metninde açıkça bir kanun ve madde belirtilmişse
+   ve bu madde retrieved kaynaklar arasında mevcutsa,
+   bu kaynağı ana hukuki dayanak olarak önceliklendir.
+
+6. Retrieved kaynaklar arasında soruya doğrudan cevap veren
+   bir madde bulunmuyorsa bunu açıkça belirt.
+   Başka bir maddeyi tahmin etme.
+
+7. Kaynaklarda olmayan bilgileri hukuki gerçekmiş gibi yazma.
+
+8. YASAL DAYANAK bölümündeki kanun ve madde bilgileri,
+   SOURCES listesindeki bilgilerle birebir uyumlu olmalıdır.
+"""
+
     messages = build_messages(
-        question,
+        guarded_question,
         context,
         history,
     )
+
+    # =====================================================
+    # 4. LLM çağrısı
+    # =====================================================
 
     start_time = time.time()
 
@@ -923,10 +1207,10 @@ def generate_answer(
         model=LLM_MODEL,
         messages=messages,
         options={
-    "temperature": 0.1,
-    "num_ctx": 8192,
-    "num_predict": 800,
-},
+            "temperature": 0.0,
+            "num_ctx": 8192,
+            "num_predict": 800,
+        },
     )
 
     elapsed = round(
@@ -952,7 +1236,6 @@ def generate_answer(
     )
 
     return answer.strip()
-
 
 # =========================================================
 # Streaming
