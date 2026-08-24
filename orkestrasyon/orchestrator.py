@@ -1,10 +1,14 @@
 from pathlib import Path
 import re
+import sys
 
 from langchain_ollama import ChatOllama
 
 from agents.ocr.main_pipeline import MultiPageOCRPipeline
 from agents.evrak_analiz.service import EvrakAnalysisService
+from agents.classification_agent.hybrid_classifier import (
+    HybridDocumentClassifier,
+)
 
 from agents.mevzuat_rag.rag_service import (
     normalize_question,
@@ -23,6 +27,36 @@ from orkestrasyon.mock_agents import (
 
 
 # =====================================================
+# PROJECT PATHS
+# =====================================================
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+
+# =====================================================
+# DOGRULAMA AGENT IMPORT
+# =====================================================
+# Dogrulama agent kendi dosyalarında:
+# from models import ...
+# şeklinde import kullandığı için klasörü Python path'e ekliyoruz.
+# Agent kodunun mantığına dokunmuyoruz.
+
+validation_agent_dir = (
+    BASE_DIR
+    / "agents"
+    / "dogrulama_agent"
+)
+
+if str(validation_agent_dir) not in sys.path:
+    sys.path.insert(
+        0,
+        str(validation_agent_dir),
+    )
+
+from validator_service import DocumentValidationService
+
+
+# =====================================================
 # REAL OCR SERVICE
 # =====================================================
 
@@ -32,7 +66,7 @@ ocr_pipeline = MultiPageOCRPipeline(
 
 
 # =====================================================
-# REAL EVRAK ANALIZ SERVICE
+# SHARED QWEN LLM
 # =====================================================
 
 evrak_llm = ChatOllama(
@@ -40,7 +74,41 @@ evrak_llm = ChatOllama(
     temperature=0.0,
 )
 
+
+# =====================================================
+# REAL EVRAK ANALIZ SERVICE
+# =====================================================
+
 evrak_service = EvrakAnalysisService(
+    llm_client=evrak_llm,
+)
+
+
+# =====================================================
+# REAL CLASSIFICATION SERVICE
+# =====================================================
+
+classifier = HybridDocumentClassifier(
+    model_dir=str(
+        BASE_DIR
+        / "agents"
+        / "classification_agent"
+        / "berturk_classifier_v1"
+    ),
+    eval_dir=str(
+        BASE_DIR
+        / "agents"
+        / "classification_agent"
+        / "evaluation"
+    ),
+)
+
+
+# =====================================================
+# REAL DOGRULAMA SERVICE
+# =====================================================
+
+validation_service = DocumentValidationService(
     llm_client=evrak_llm,
 )
 
@@ -163,6 +231,7 @@ def extract_explicit_legal_references(
     refs = []
 
     patterns = [
+
         # Örnek:
         # 5271 sayılı CMK'nın 147 nci maddesi
         r"(\d{4})\s+say[ıi]l[ıi].{0,40}?(\d{1,4})\s*(?:nci|ncı|inci|ıncı|uncu|üncü|madde|maddesi)",
@@ -193,7 +262,6 @@ def extract_explicit_legal_references(
                 ref
             )
 
-    # Tekrarları kaldır
     return list(
         dict.fromkeys(
             refs
@@ -243,7 +311,7 @@ def build_rag_question(
     )
 
     # -------------------------------------------------
-    # Belge içindeki açık mevzuat referanslarını çıkar
+    # Belgede açıkça yazılan mevzuatları çıkar
     # -------------------------------------------------
 
     legal_refs = extract_explicit_legal_references(
@@ -303,6 +371,7 @@ def process_input(
     )
 
     if route == "invalid":
+
         return {
             "status": "error",
             "message": "Geçerli bir giriş bulunamadı.",
@@ -314,17 +383,19 @@ def process_input(
 
     state = create_state(
         input_type=route,
+
         document_id=(
             "doc_001"
             if file
             else None
         ),
+
         user_question=text,
         file_path=file,
     )
 
     # =================================================
-    # CASE 1: QUESTION ONLY
+    # CASE 1 — QUESTION ONLY
     # =================================================
 
     if route == "question":
@@ -352,22 +423,23 @@ def process_input(
         }
 
     # =================================================
-    # CASE 2 / 3: DOCUMENT
+    # CASE 2 / 3 — DOCUMENT
     # =================================================
 
     file_path = Path(
         str(file)
     )
 
-    # -------------------------------------------------
-    # REAL OCR
-    # -------------------------------------------------
+    # =================================================
+    # 1. REAL OCR
+    # =================================================
 
     state.current_step = "ocr"
 
     ocr_result = (
         ocr_pipeline.process_file(
             str(file_path),
+
             doc_id=(
                 state.document_id
                 or "doc_001"
@@ -379,10 +451,13 @@ def process_input(
         ocr_result,
         "model_dump",
     ):
+
         ocr_result_dict = (
             ocr_result.model_dump()
         )
+
     else:
+
         ocr_result_dict = (
             ocr_result
         )
@@ -408,9 +483,101 @@ def process_input(
         )
     )
 
-    # -------------------------------------------------
-    # REAL EVRAK ANALIZ
-    # -------------------------------------------------
+    # =================================================
+    # 2. REAL CLASSIFICATION
+    # =================================================
+
+    state.current_step = (
+        "classification"
+    )
+
+    if (
+        state.raw_text
+        and state.raw_text.strip()
+    ):
+
+        classification_raw = (
+            classifier.predict(
+                state.raw_text
+            )
+        )
+
+        classification_result = {
+
+            "label": (
+                classification_raw.get(
+                    "final_label"
+                )
+                or classification_raw.get(
+                    "label"
+                )
+                or classification_raw.get(
+                    "bert_raw_label"
+                )
+                or "unknown"
+            ),
+
+            "confidence": float(
+                classification_raw.get(
+                    "confidence",
+                    0.0,
+                )
+                or 0.0
+            ),
+
+            "bert_raw_label": (
+                classification_raw.get(
+                    "bert_raw_label"
+                )
+            ),
+
+            "decision_reason": (
+                classification_raw.get(
+                    "decision_reason"
+                )
+            ),
+
+            "matched_rules": (
+                classification_raw.get(
+                    "matched_rules",
+                    [],
+                )
+            ),
+
+            "top_probabilities": (
+                classification_raw.get(
+                    "top_probabilities",
+                    classification_raw.get(
+                        "top_probs",
+                        {},
+                    ),
+                )
+            ),
+        }
+
+    else:
+
+        classification_result = {
+
+            "label": "unknown",
+
+            "confidence": 0.0,
+
+            "bert_raw_label": None,
+
+            "decision_reason": (
+                "OCR metni boş olduğu için "
+                "sınıflandırma yapılamadı."
+            ),
+
+            "matched_rules": [],
+
+            "top_probabilities": {},
+        }
+
+    # =================================================
+    # 3. REAL EVRAK ANALIZ
+    # =================================================
 
     state.current_step = (
         "evrak_analiz"
@@ -425,7 +592,9 @@ def process_input(
 
     evrak_result = (
         evrak_service.process_document(
+
             document_info_dict={
+
                 "document_id": (
                     document_info.get(
                         "document_id"
@@ -467,7 +636,10 @@ def process_input(
             },
 
             ocr_dict={
-                "text": state.raw_text,
+
+                "text": (
+                    state.raw_text
+                ),
 
                 "pages": list(
                     range(
@@ -498,7 +670,9 @@ def process_input(
                 ),
             },
 
-            classification_result=None,
+            classification_result=(
+                classification_result
+            ),
         )
     )
 
@@ -506,10 +680,13 @@ def process_input(
         evrak_result,
         "model_dump",
     ):
+
         evrak_result_dict = (
             evrak_result.model_dump()
         )
+
     else:
+
         evrak_result_dict = (
             evrak_result
         )
@@ -524,9 +701,9 @@ def process_input(
         analysis_result
     )
 
-    # -------------------------------------------------
+    # =================================================
     # MISSING INFORMATION
-    # -------------------------------------------------
+    # =================================================
 
     missing_info = (
         analysis_result.get(
@@ -539,29 +716,31 @@ def process_input(
         missing_info
     )
 
-    # Test sırasında pipeline devam ediyor.
-    # Missing information varsa burada kesmiyoruz.
-
-    # -------------------------------------------------
-    # REAL MEVZUAT RAG
-    # -------------------------------------------------
+    # =================================================
+    # 4. REAL MEVZUAT RAG
+    # =================================================
 
     state.current_step = (
         "mevzuat_rag"
     )
 
-    rag_question = build_rag_question(
-        analysis_result=analysis_result,
+    rag_question = (
+        build_rag_question(
 
-        user_question=(
-            text
-            if route == "document_question"
-            else None
-        ),
+            analysis_result=(
+                analysis_result
+            ),
 
-        # EN ÖNEMLİ EKLEME:
-        # OCR metni RAG query builder'a gönderiliyor.
-        raw_text=state.raw_text,
+            user_question=(
+                text
+                if route == "document_question"
+                else None
+            ),
+
+            raw_text=(
+                state.raw_text
+            ),
+        )
     )
 
     rag_result = run_real_rag(
@@ -573,30 +752,49 @@ def process_input(
         rag_result
     )
 
-    # -------------------------------------------------
-    # REAL BIRIM YONLENDIRME
-    # -------------------------------------------------
+    # =================================================
+    # 5. REAL BIRIM YONLENDIRME
+    # =================================================
 
     state.current_step = (
         "birim_yonlendirme"
     )
 
     routing_result = route_unit(
+
         evrak_analysis=(
             analysis_result
         ),
+
         rag_result=(
             rag_result
         ),
     )
 
+    if hasattr(
+        routing_result,
+        "model_dump",
+    ):
+
+        routing_result_dict = (
+            routing_result.model_dump()
+        )
+
+    else:
+
+        routing_result_dict = (
+            routing_result
+        )
+
     state.routing_result = (
-        routing_result.model_dump()
+        routing_result_dict
     )
 
-    # -------------------------------------------------
-    # RESMI YAZI - MOCK
-    # -------------------------------------------------
+    # =================================================
+    # 6. RESMI YAZI
+    # =================================================
+    # ŞİMDİLİK MOCK
+    # Gerçek resmi yazı agent yüklendiğinde burası değişecek.
 
     state.current_step = (
         "resmi_yazi"
@@ -613,14 +811,12 @@ def process_input(
         resmi_yazi_result
     )
 
-    # -------------------------------------------------
-    # FINAL
-    # -------------------------------------------------
+    # =================================================
+    # FINAL JSON — VALIDATION ÖNCESİ
+    # =================================================
 
-    state.current_step = "completed"
-    state.status = "completed"
+    final_json = {
 
-    return {
         "success": True,
 
         "document_info": (
@@ -632,9 +828,13 @@ def process_input(
 
         "ocr": (
             evrak_result_dict.get(
+
                 "ocr",
+
                 {
-                    "text": state.raw_text,
+                    "text": (
+                        state.raw_text
+                    ),
 
                     "pages": list(
                         range(
@@ -667,6 +867,10 @@ def process_input(
             )
         ),
 
+        "classification": (
+            classification_result
+        ),
+
         "evrak_analysis": (
             state.analysis
         ),
@@ -683,17 +887,56 @@ def process_input(
             state.official_letter
         ),
 
-        "validation": (
-            evrak_result_dict.get(
-                "validation",
-                {
-                    "status": "pending",
-                    "issues": [],
-                    "confidence": None,
-                },
-            )
-        ),
+        # Validation çalışmadan önce geçici blok
+        "validation": {
+            "status": "pending",
+            "issues": [],
+            "confidence": None,
+        },
     }
+
+    # =================================================
+    # 7. REAL DOGRULAMA
+    # =================================================
+
+    state.current_step = (
+        "dogrulama"
+    )
+
+    validation_result = (
+        validation_service.validate_document(
+            final_json
+        )
+    )
+
+    if hasattr(
+        validation_result,
+        "model_dump",
+    ):
+
+        validation_result_dict = (
+            validation_result.model_dump()
+        )
+
+    else:
+
+        validation_result_dict = (
+            validation_result
+        )
+
+    # Gerçek validation sonucunu final JSON'a yaz
+    final_json["validation"] = (
+        validation_result_dict
+    )
+
+    # =================================================
+    # COMPLETED
+    # =================================================
+
+    state.current_step = "completed"
+    state.status = "completed"
+
+    return final_json
 
 
 # =====================================================
@@ -702,17 +945,27 @@ def process_input(
 
 if __name__ == "__main__":
 
+    # =================================================
+    # TEST 1 — QUESTION
+    # =================================================
+
     print(
         "\n===== TEST 1: QUESTION ====="
     )
 
     result1 = process_input(
-        text="Hırsızlık suçunun cezası nedir?"
+        text=(
+            "Hırsızlık suçunun cezası nedir?"
+        )
     )
 
     print(
         result1
     )
+
+    # =================================================
+    # TEST 2 — DOCUMENT
+    # =================================================
 
     print(
         "\n===== TEST 2: DOCUMENT ====="
@@ -726,18 +979,28 @@ if __name__ == "__main__":
         result2
     )
 
+    # =================================================
+    # TEST 3 — DOCUMENT + QUESTION
+    # =================================================
+
     print(
         "\n===== TEST 3: DOCUMENT + QUESTION ====="
     )
 
     result3 = process_input(
-        text="Bu belgenin amacı nedir?",
+        text=(
+            "Bu belgenin amacı nedir?"
+        ),
         file="test.jpeg",
     )
 
     print(
         result3
     )
+
+    # =================================================
+    # TEST 4 — INVALID
+    # =================================================
 
     print(
         "\n===== TEST 4: INVALID ====="
