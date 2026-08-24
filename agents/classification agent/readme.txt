@@ -73,4 +73,10 @@
 ├── data.py                       # سكريبت استخراج النصوص وبناء dataset.jsonl
 ├── train.py                      # سكريبت تدريب وتقييم نموذج BERTurk
 ├── hybrid_classifier.py          # كلاس الاستدلال والتحقق الهجين (BERT + Rules)
-└── README.md                     # التوثيق الشامل
+└── README.md                     # التوثيق الشام
+
+يمكنك استدعاء هذا الكلاس مباشرة داخل أي سكريبت عبر:
+from hybrid_classifier import HybridDocumentClassifier
+clf = HybridDocumentClassifier()
+res = clf.predict(clean_text)
+ل
