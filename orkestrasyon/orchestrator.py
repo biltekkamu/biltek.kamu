@@ -1,11 +1,13 @@
-from pathlib import Path
+import os
 import re
 import sys
 import time
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
-import os
 
 from agents.ocr.main_pipeline import MultiPageOCRPipeline
 from agents.evrak_analiz.service import EvrakAnalysisService
@@ -40,17 +42,10 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 # DOGRULAMA AGENT IMPORT
 # =====================================================
 
-validation_agent_dir = (
-    BASE_DIR
-    / "agents"
-    / "dogrulama_agent"
-)
+validation_agent_dir = BASE_DIR / "agents" / "dogrulama_agent"
 
 if str(validation_agent_dir) not in sys.path:
-    sys.path.insert(
-        0,
-        str(validation_agent_dir),
-    )
+    sys.path.insert(0, str(validation_agent_dir))
 
 from validator_service import DocumentValidationService
 
@@ -59,19 +54,15 @@ from validator_service import DocumentValidationService
 # REAL OCR SERVICE
 # =====================================================
 
-ocr_pipeline = MultiPageOCRPipeline(
-    lang="tr"
-)
+ocr_pipeline = MultiPageOCRPipeline(lang="tr")
 
 
 # =====================================================
-# SHARED QWEN LLM
+# SHARED QWEN LLM (OLLAMA)
 # =====================================================
 
-evrak_llm = ChatOpenAI(
-    model="llm-fast",
-    api_key=os.getenv("EVREN_API_KEY"),
-    base_url="https://evren-llmapi.ssyz.org.tr/v1",
+evrak_llm = ChatOllama(
+    model="qwen2.5:7b",
     temperature=0.0,
 )
 
@@ -91,16 +82,10 @@ evrak_service = EvrakAnalysisService(
 
 classifier = HybridDocumentClassifier(
     model_dir=str(
-        BASE_DIR
-        / "agents"
-        / "classification_agent"
-        / "berturk_classifier_v1"
+        BASE_DIR / "agents" / "classification_agent" / "berturk_classifier_v1"
     ),
     eval_dir=str(
-        BASE_DIR
-        / "agents"
-        / "classification_agent"
-        / "evaluation"
+        BASE_DIR / "agents" / "classification_agent" / "evaluation"
     ),
 )
 
@@ -118,19 +103,9 @@ validation_service = DocumentValidationService(
 # REAL RAG
 # =====================================================
 
-def run_real_rag(
-    question: str,
-    top_k: int = 5,
-) -> dict:
-
-    normalized_question = normalize_question(
-        question
-    )
-
-    documents = retrieve_documents(
-        normalized_question,
-        top_k=top_k,
-    )
+def run_real_rag(question: str, top_k: int = 5) -> dict:
+    normalized_question = normalize_question(question)
+    documents = retrieve_documents(normalized_question, top_k=top_k)
 
     if not documents:
         return {
@@ -140,59 +115,25 @@ def run_real_rag(
             "confidence": None,
         }
 
-    answer = generate_answer(
-        normalized_question,
-        documents,
-        history=None,
-    )
-
+    answer = generate_answer(normalized_question, documents, history=None)
     sources = []
     scores = []
 
     for doc in documents:
+        metadata = doc.get("metadata", {})
+        score = doc.get("score")
 
-        metadata = doc.get(
-            "metadata",
-            {},
-        )
-
-        score = doc.get(
-            "score"
-        )
-
-        if isinstance(
-            score,
-            (int, float),
-        ):
+        if isinstance(score, (int, float)):
             scores.append(score)
 
-        title = metadata.get(
-            "law_name",
-            metadata.get(
-                "document_name",
-            ),
-        )
-
-        law_number = metadata.get(
-            "law_number"
-        )
-
-        article = metadata.get(
-            "madde"
-        )
+        title = metadata.get("law_name", metadata.get("document_name"))
+        law_number = metadata.get("law_number")
+        article = metadata.get("madde")
 
         if article is not None:
-
-            article = str(
-                article
-            )
-
-            if not article.lower().startswith(
-                "madde"
-            ):
-                article = (
-                    f"Madde {article}"
-                )
+            article = str(article)
+            if not article.lower().startswith("madde"):
+                article = f"Madde {article}"
 
         sources.append({
             "source_type": "kanun",
@@ -201,14 +142,7 @@ def run_real_rag(
             "article": article,
         })
 
-    confidence = (
-        round(
-            max(scores),
-            3,
-        )
-        if scores
-        else None
-    )
+    confidence = round(max(scores), 3) if scores else None
 
     return {
         "query": normalized_question,
@@ -222,45 +156,23 @@ def run_real_rag(
 # EXPLICIT LEGAL REFERENCE EXTRACTION
 # =====================================================
 
-def extract_explicit_legal_references(
-    text: str,
-) -> list[str]:
-
+def extract_explicit_legal_references(text: str) -> list[str]:
     if not text:
         return []
 
     refs = []
-
     patterns = [
         r"(\d{4})\s+say[ıi]l[ıi].{0,40}?(\d{1,4})\s*(?:nci|ncı|inci|ıncı|uncu|üncü|madde|maddesi)",
-
         r"\b(CMK|TCK|VUK)\s*['’]?(?:nun|nın|nin|un|ün)?\s*(\d{1,4})",
     ]
 
     for pattern in patterns:
-
-        matches = re.findall(
-            pattern,
-            text,
-            flags=re.IGNORECASE,
-        )
-
+        matches = re.findall(pattern, text, flags=re.IGNORECASE)
         for match in matches:
+            ref = " ".join(str(value) for value in match)
+            refs.append(ref)
 
-            ref = " ".join(
-                str(value)
-                for value in match
-            )
-
-            refs.append(
-                ref
-            )
-
-    return list(
-        dict.fromkeys(
-            refs
-        )
-    )
+    return list(dict.fromkeys(refs))
 
 
 # =====================================================
@@ -272,723 +184,218 @@ def build_rag_question(
     user_question: str | None = None,
     raw_text: str | None = None,
 ) -> str:
-
-    topic = analysis_result.get(
-        "topic",
-        "",
-    )
-
-    purpose = analysis_result.get(
-        "purpose",
-        "",
-    )
-
-    intent = analysis_result.get(
-        "intent",
-        "",
-    )
-
-    summary = analysis_result.get(
-        "summary",
-        "",
-    )
+    topic = analysis_result.get("topic", "")
+    purpose = analysis_result.get("purpose", "")
+    intent = analysis_result.get("intent", "")
+    summary = analysis_result.get("summary", "")
 
     document_context = " ".join(
-        part
-        for part in [
-            str(topic),
-            str(purpose),
-            str(intent),
-            str(summary),
-        ]
-        if part
+        part for part in [str(topic), str(purpose), str(intent), str(summary)] if part
     )
 
-    legal_refs = extract_explicit_legal_references(
-        raw_text or ""
-    )
-
+    legal_refs = extract_explicit_legal_references(raw_text or "")
     legal_context = ""
 
     if legal_refs:
-
-        legal_context = (
-            " Belgede açıkça geçen mevzuat: "
-            + ", ".join(
-                legal_refs
-            )
-            + "."
-        )
+        legal_context = f" Belgede açıkça geçen mevzuat: {', '.join(legal_refs)}."
 
     if user_question:
+        return f"Belge bağlamı: {document_context}.{legal_context} Kullanıcı sorusu: {user_question}"
 
-        return (
-            f"Belge bağlamı: {document_context}."
-            f"{legal_context} "
-            f"Kullanıcı sorusu: {user_question}"
-        )
-
-    return (
-        f"{document_context}."
-        f"{legal_context}"
-    )
+    return f"{document_context}.{legal_context}"
 
 
 # =====================================================
 # MAIN WORKFLOW
 # =====================================================
 
-def process_input(
-    text=None,
-    file=None,
-):
-
+def process_input(text=None, file=None):
     total_start = time.perf_counter()
 
-    # -------------------------------------------------
-    # ROUTER
-    # -------------------------------------------------
-
-    route = detect_route(
-        text=text,
-        file=file,
-    )
+    route = detect_route(text=text, file=file)
 
     if route == "invalid":
-
-        total_time = (
-            time.perf_counter()
-            - total_start
-        )
-
+        total_time = time.perf_counter() - total_start
         return {
             "status": "error",
             "message": "Geçerli bir giriş bulunamadı.",
-            "timing": {
-                "total": round(
-                    total_time,
-                    2,
-                )
-            },
+            "timing": {"total": round(total_time, 2)},
         }
-
-    # -------------------------------------------------
-    # STATE
-    # -------------------------------------------------
 
     state = create_state(
         input_type=route,
-
-        document_id=(
-            "doc_001"
-            if file
-            else None
-        ),
-
+        document_id="doc_001" if file else None,
         user_question=text,
         file_path=file,
     )
 
-    # =================================================
+    # -------------------------------------------------
     # CASE 1 — QUESTION ONLY
-    # =================================================
-
+    # -------------------------------------------------
     if route == "question":
-
-        state.current_step = (
-            "mevzuat_rag"
-        )
-
+        state.current_step = "mevzuat_rag"
         rag_start = time.perf_counter()
+        rag_result = run_real_rag(question=text, top_k=2)
+        rag_time = time.perf_counter() - rag_start
 
-        rag_result = run_real_rag(
-            question=text,
-            top_k=5,
-        )
-
-        rag_time = (
-            time.perf_counter()
-            - rag_start
-        )
-
-        print(
-            f"[TIMING] RAG: "
-            f"{rag_time:.2f} sec"
-        )
-
-        state.rag_result = (
-            rag_result
-        )
-
+        state.rag_result = rag_result
         state.status = "completed"
         state.current_step = "completed"
 
-        total_time = (
-            time.perf_counter()
-            - total_start
-        )
-
-        print(
-            f"[TIMING] TOTAL: "
-            f"{total_time:.2f} sec"
-        )
-
+        total_time = time.perf_counter() - total_start
         return {
             "status": state.status,
             "route": route,
             "rag": rag_result,
-
             "timing": {
-                "rag": round(
-                    rag_time,
-                    2,
-                ),
-                "total": round(
-                    total_time,
-                    2,
-                ),
+                "rag": round(rag_time, 2),
+                "total": round(total_time, 2),
             },
         }
 
-    # =================================================
+    # -------------------------------------------------
     # CASE 2 / 3 — DOCUMENT
-    # =================================================
+    # -------------------------------------------------
+    file_path = Path(str(file))
 
-    file_path = Path(
-        str(file)
-    )
-
-    # =================================================
     # 1. REAL OCR
-    # =================================================
-
     state.current_step = "ocr"
-
     ocr_start = time.perf_counter()
-
-    ocr_result = (
-        ocr_pipeline.process_file(
-            str(file_path),
-
-            doc_id=(
-                state.document_id
-                or "doc_001"
-            ),
-        )
+    ocr_result = ocr_pipeline.process_file(
+        str(file_path),
+        doc_id=(state.document_id or "doc_001"),
     )
+    ocr_time = time.perf_counter() - ocr_start
 
-    ocr_time = (
-        time.perf_counter()
-        - ocr_start
-    )
-
-    print(
-        f"\n[TIMING] OCR: "
-        f"{ocr_time:.2f} sec"
-    )
-
-    if hasattr(
-        ocr_result,
-        "model_dump",
-    ):
-
-        ocr_result_dict = (
-            ocr_result.model_dump()
-        )
-
+    if hasattr(ocr_result, "model_dump"):
+        ocr_result_dict = ocr_result.model_dump()
     else:
+        ocr_result_dict = ocr_result
 
-        ocr_result_dict = (
-            ocr_result
-        )
+    document_info = ocr_result_dict.get("document_info", {})
+    ocr_input = ocr_result_dict.get("input", {})
+    state.raw_text = ocr_input.get("clean_text", "")
 
-    document_info = (
-        ocr_result_dict.get(
-            "document_info",
-            {},
-        )
-    )
-
-    ocr_input = (
-        ocr_result_dict.get(
-            "input",
-            {},
-        )
-    )
-
-    state.raw_text = (
-        ocr_input.get(
-            "clean_text",
-            "",
-        )
-    )
-
-    # =================================================
     # 2. REAL CLASSIFICATION
-    # =================================================
+    state.current_step = "classification"
+    classification_start = time.perf_counter()
 
-    state.current_step = (
-        "classification"
-    )
-
-    classification_start = (
-        time.perf_counter()
-    )
-
-    if (
-        state.raw_text
-        and state.raw_text.strip()
-    ):
-
-        classification_raw = (
-            classifier.predict(
-                state.raw_text
-            )
-        )
-
+    if state.raw_text and state.raw_text.strip():
+        classification_raw = classifier.predict(state.raw_text)
         classification_result = {
-
             "label": (
-                classification_raw.get(
-                    "final_label"
-                )
-                or classification_raw.get(
-                    "label"
-                )
-                or classification_raw.get(
-                    "bert_raw_label"
-                )
+                classification_raw.get("final_label")
+                or classification_raw.get("label")
+                or classification_raw.get("bert_raw_label")
                 or "unknown"
             ),
-
-            "confidence": float(
-                classification_raw.get(
-                    "confidence",
-                    0.0,
-                )
-                or 0.0
-            ),
-
-            "bert_raw_label": (
-                classification_raw.get(
-                    "bert_raw_label"
-                )
-            ),
-
-            "decision_reason": (
-                classification_raw.get(
-                    "decision_reason"
-                )
-            ),
-
-            "matched_rules": (
-                classification_raw.get(
-                    "matched_rules",
-                    [],
-                )
-            ),
-
-            "top_probabilities": (
-                classification_raw.get(
-                    "top_probabilities",
-                    classification_raw.get(
-                        "top_probs",
-                        {},
-                    ),
-                )
+            "confidence": float(classification_raw.get("confidence", 0.0) or 0.0),
+            "bert_raw_label": classification_raw.get("bert_raw_label"),
+            "decision_reason": classification_raw.get("decision_reason"),
+            "matched_rules": classification_raw.get("matched_rules", []),
+            "top_probabilities": classification_raw.get(
+                "top_probabilities",
+                classification_raw.get("top_probs", {}),
             ),
         }
-
     else:
-
         classification_result = {
-
             "label": "unknown",
-
             "confidence": 0.0,
-
             "bert_raw_label": None,
-
-            "decision_reason": (
-                "OCR metni boş olduğu için "
-                "sınıflandırma yapılamadı."
-            ),
-
+            "decision_reason": "OCR metni boş olduğu için sınıflandırma yapılamadı.",
             "matched_rules": [],
-
             "top_probabilities": {},
         }
 
-    classification_time = (
-        time.perf_counter()
-        - classification_start
-    )
+    classification_time = time.perf_counter() - classification_start
 
-    print(
-        f"[TIMING] Classification: "
-        f"{classification_time:.2f} sec"
-    )
-
-    # =================================================
     # 3. REAL EVRAK ANALIZ
-    # =================================================
-
-    state.current_step = (
-        "evrak_analiz"
-    )
-
+    state.current_step = "evrak_analiz"
     evrak_start = time.perf_counter()
+    page_count = document_info.get("page_count", 1)
 
-    page_count = (
-        document_info.get(
-            "page_count",
-            1,
-        )
+    evrak_result = evrak_service.process_document(
+        document_info_dict={
+            "document_id": document_info.get("document_id") or state.document_id or "doc_001",
+            "file_name": document_info.get("file_name") or file_path.name,
+            "file_type": document_info.get("file_type") or file_path.suffix.replace(".", "").lower() or "pdf",
+            "page_count": page_count,
+            "language": document_info.get("language") or "tr",
+        },
+        ocr_dict={
+            "text": state.raw_text,
+            "pages": list(range(1, page_count + 1)),
+            "parsed_metadata": ocr_input.get("metadata", {}),
+            "tables": ocr_input.get("tables", []),
+            "vision": ocr_input.get("vision", {}),
+        },
+        classification_result=classification_result,
     )
+    evrak_time = time.perf_counter() - evrak_start
 
-    evrak_result = (
-        evrak_service.process_document(
-
-            document_info_dict={
-
-                "document_id": (
-                    document_info.get(
-                        "document_id"
-                    )
-                    or state.document_id
-                    or "doc_001"
-                ),
-
-                "file_name": (
-                    document_info.get(
-                        "file_name"
-                    )
-                    or file_path.name
-                ),
-
-                "file_type": (
-                    document_info.get(
-                        "file_type"
-                    )
-                    or file_path.suffix
-                    .replace(
-                        ".",
-                        "",
-                    )
-                    .lower()
-                    or "pdf"
-                ),
-
-                "page_count": (
-                    page_count
-                ),
-
-                "language": (
-                    document_info.get(
-                        "language"
-                    )
-                    or "tr"
-                ),
-            },
-
-            ocr_dict={
-
-                "text": (
-                    state.raw_text
-                ),
-
-                "pages": list(
-                    range(
-                        1,
-                        page_count + 1,
-                    )
-                ),
-
-                "parsed_metadata": (
-                    ocr_input.get(
-                        "metadata",
-                        {},
-                    )
-                ),
-
-                "tables": (
-                    ocr_input.get(
-                        "tables",
-                        [],
-                    )
-                ),
-
-                "vision": (
-                    ocr_input.get(
-                        "vision",
-                        {},
-                    )
-                ),
-            },
-
-            classification_result=(
-                classification_result
-            ),
-        )
-    )
-
-    evrak_time = (
-        time.perf_counter()
-        - evrak_start
-    )
-
-    print(
-        f"[TIMING] Evrak Analysis: "
-        f"{evrak_time:.2f} sec"
-    )
-
-    if hasattr(
-        evrak_result,
-        "model_dump",
-    ):
-
-        evrak_result_dict = (
-            evrak_result.model_dump()
-        )
-
+    if hasattr(evrak_result, "model_dump"):
+        evrak_result_dict = evrak_result.model_dump()
     else:
+        evrak_result_dict = evrak_result
 
-        evrak_result_dict = (
-            evrak_result
-        )
+    analysis_result = evrak_result_dict["evrak_analysis"]
+    state.analysis = analysis_result
+    state.missing_information = analysis_result.get("missing_information", [])
 
-    analysis_result = (
-        evrak_result_dict[
-            "evrak_analysis"
-        ]
-    )
-
-    state.analysis = (
-        analysis_result
-    )
-
-    # =================================================
-    # MISSING INFORMATION
-    # =================================================
-
-    missing_info = (
-        analysis_result.get(
-            "missing_information",
-            [],
-        )
-    )
-
-    state.missing_information = (
-        missing_info
-    )
-
-    # =================================================
     # 4. REAL MEVZUAT RAG
-    # =================================================
-
-    state.current_step = (
-        "mevzuat_rag"
-    )
-
+    state.current_step = "mevzuat_rag"
     rag_start = time.perf_counter()
-
-    rag_question = (
-        build_rag_question(
-
-            analysis_result=(
-                analysis_result
-            ),
-
-            user_question=(
-                text
-                if route == "document_question"
-                else None
-            ),
-
-            raw_text=(
-                state.raw_text
-            ),
-        )
+    rag_question = build_rag_question(
+        analysis_result=analysis_result,
+        user_question=(text if route == "document_question" else None),
+        raw_text=state.raw_text,
     )
+    rag_result = run_real_rag(question=rag_question, top_k=2)
+    rag_time = time.perf_counter() - rag_start
+    state.rag_result = rag_result
 
-    rag_result = run_real_rag(
-        question=rag_question,
-        top_k=5,
-    )
-
-    rag_time = (
-        time.perf_counter()
-        - rag_start
-    )
-
-    print(
-        f"[TIMING] RAG: "
-        f"{rag_time:.2f} sec"
-    )
-
-    state.rag_result = (
-        rag_result
-    )
-
-    # =================================================
     # 5. REAL BIRIM YONLENDIRME
-    # =================================================
-
-    state.current_step = (
-        "birim_yonlendirme"
-    )
-
-    routing_start = (
-        time.perf_counter()
-    )
-
+    state.current_step = "birim_yonlendirme"
+    routing_start = time.perf_counter()
     routing_result = route_unit(
-
-        evrak_analysis=(
-            analysis_result
-        ),
-
-        rag_result=(
-            rag_result
-        ),
+        evrak_analysis=analysis_result,
+        rag_result=rag_result,
     )
+    routing_time = time.perf_counter() - routing_start
 
-    routing_time = (
-        time.perf_counter()
-        - routing_start
-    )
-
-    print(
-        f"[TIMING] Routing: "
-        f"{routing_time:.2f} sec"
-    )
-
-    if hasattr(
-        routing_result,
-        "model_dump",
-    ):
-
-        routing_result_dict = (
-            routing_result.model_dump()
-        )
-
+    if hasattr(routing_result, "model_dump"):
+        routing_result_dict = routing_result.model_dump()
     else:
+        routing_result_dict = routing_result
+    state.routing_result = routing_result_dict
 
-        routing_result_dict = (
-            routing_result
-        )
-
-    state.routing_result = (
-        routing_result_dict
-    )
-
-    # =================================================
-    # 6. RESMI YAZI — MOCK
-    # =================================================
-
-    state.current_step = (
-        "resmi_yazi"
-    )
-
+    # 6. RESMI YAZI (MOCK)
+    state.current_step = "resmi_yazi"
     resmi_start = time.perf_counter()
+    resmi_yazi_result = mock_resmi_yazi(analysis_result, rag_result)
+    resmi_time = time.perf_counter() - resmi_start
+    state.official_letter = resmi_yazi_result
 
-    resmi_yazi_result = (
-        mock_resmi_yazi(
-            analysis_result,
-            rag_result,
-        )
-    )
-
-    resmi_time = (
-        time.perf_counter()
-        - resmi_start
-    )
-
-    print(
-        f"[TIMING] Resmi Yazi: "
-        f"{resmi_time:.2f} sec"
-    )
-
-    state.official_letter = (
-        resmi_yazi_result
-    )
-
-    # =================================================
-    # FINAL JSON — VALIDATION ÖNCESİ
-    # =================================================
-
+    # 7. REAL DOGRULAMA
     final_json = {
-
         "success": True,
-
-        "document_info": (
-            evrak_result_dict.get(
-                "document_info",
-                document_info,
-            )
+        "document_info": evrak_result_dict.get("document_info", document_info),
+        "ocr": evrak_result_dict.get(
+            "ocr",
+            {
+                "text": state.raw_text,
+                "pages": list(range(1, page_count + 1)),
+                "parsed_metadata": ocr_input.get("metadata", {}),
+                "tables": ocr_input.get("tables", []),
+                "vision": ocr_input.get("vision", {}),
+            },
         ),
-
-        "ocr": (
-            evrak_result_dict.get(
-
-                "ocr",
-
-                {
-                    "text": (
-                        state.raw_text
-                    ),
-
-                    "pages": list(
-                        range(
-                            1,
-                            page_count + 1,
-                        )
-                    ),
-
-                    "parsed_metadata": (
-                        ocr_input.get(
-                            "metadata",
-                            {},
-                        )
-                    ),
-
-                    "tables": (
-                        ocr_input.get(
-                            "tables",
-                            [],
-                        )
-                    ),
-
-                    "vision": (
-                        ocr_input.get(
-                            "vision",
-                            {},
-                        )
-                    ),
-                },
-            )
-        ),
-
-        "classification": (
-            classification_result
-        ),
-
-        "evrak_analysis": (
-            state.analysis
-        ),
-
-        "rag": (
-            state.rag_result
-        ),
-
-        "routing": (
-            state.routing_result
-        ),
-
-        "official_writing": (
-            state.official_letter
-        ),
-
+        "classification": classification_result,
+        "evrak_analysis": state.analysis,
+        "rag": state.rag_result,
+        "routing": state.routing_result,
+        "official_writing": state.official_letter,
         "validation": {
             "status": "pending",
             "issues": [],
@@ -996,208 +403,30 @@ def process_input(
         },
     }
 
-    # =================================================
-    # 7. REAL DOGRULAMA
-    # =================================================
+    state.current_step = "dogrulama"
+    validation_start = time.perf_counter()
+    validation_result = validation_service.validate_document(final_json)
+    validation_time = time.perf_counter() - validation_start
 
-    state.current_step = (
-        "dogrulama"
-    )
-
-    validation_start = (
-        time.perf_counter()
-    )
-
-    validation_result = (
-        validation_service.validate_document(
-            final_json
-        )
-    )
-
-    validation_time = (
-        time.perf_counter()
-        - validation_start
-    )
-
-    print(
-        f"[TIMING] Validation: "
-        f"{validation_time:.2f} sec"
-    )
-
-    if hasattr(
-        validation_result,
-        "model_dump",
-    ):
-
-        validation_result_dict = (
-            validation_result.model_dump()
-        )
-
+    if hasattr(validation_result, "model_dump"):
+        validation_result_dict = validation_result.model_dump()
     else:
-
-        validation_result_dict = (
-            validation_result
-        )
-
-    final_json["validation"] = (
-        validation_result_dict
-    )
-
-    # =================================================
-    # COMPLETE + TOTAL TIMING
-    # =================================================
+        validation_result_dict = validation_result
+    final_json["validation"] = validation_result_dict
 
     state.current_step = "completed"
     state.status = "completed"
-
-    total_time = (
-        time.perf_counter()
-        - total_start
-    )
-
-    print(
-        "\n=============================="
-    )
-
-    print(
-        f"[TIMING] OCR: "
-        f"{ocr_time:.2f} sec"
-    )
-
-    print(
-        f"[TIMING] Classification: "
-        f"{classification_time:.2f} sec"
-    )
-
-    print(
-        f"[TIMING] Evrak Analysis: "
-        f"{evrak_time:.2f} sec"
-    )
-
-    print(
-        f"[TIMING] RAG: "
-        f"{rag_time:.2f} sec"
-    )
-
-    print(
-        f"[TIMING] Routing: "
-        f"{routing_time:.2f} sec"
-    )
-
-    print(
-        f"[TIMING] Resmi Yazi: "
-        f"{resmi_time:.2f} sec"
-    )
-
-    print(
-        f"[TIMING] Validation: "
-        f"{validation_time:.2f} sec"
-    )
-
-    print(
-        f"[TIMING] TOTAL: "
-        f"{total_time:.2f} sec"
-    )
-
-    print(
-        "==============================\n"
-    )
+    total_time = time.perf_counter() - total_start
 
     final_json["timing"] = {
-
-        "ocr": round(
-            ocr_time,
-            2,
-        ),
-
-        "classification": round(
-            classification_time,
-            2,
-        ),
-
-        "evrak_analysis": round(
-            evrak_time,
-            2,
-        ),
-
-        "rag": round(
-            rag_time,
-            2,
-        ),
-
-        "routing": round(
-            routing_time,
-            2,
-        ),
-
-        "official_writing": round(
-            resmi_time,
-            2,
-        ),
-
-        "validation": round(
-            validation_time,
-            2,
-        ),
-
-        "total": round(
-            total_time,
-            2,
-        ),
+        "ocr": round(ocr_time, 2),
+        "classification": round(classification_time, 2),
+        "evrak_analysis": round(evrak_time, 2),
+        "rag": round(rag_time, 2),
+        "routing": round(routing_time, 2),
+        "official_writing": round(resmi_time, 2),
+        "validation": round(validation_time, 2),
+        "total": round(total_time, 2),
     }
 
     return final_json
-
-
-# =====================================================
-# TESTS
-# =====================================================
-
-if __name__ == "__main__":
-
-    print(
-        "\n===== TEST 1: QUESTION ====="
-    )
-
-    result1 = process_input(
-        text="Hırsızlık suçunun cezası nedir?"
-    )
-
-    print(
-        result1
-    )
-
-    print(
-        "\n===== TEST 2: DOCUMENT ====="
-    )
-
-    result2 = process_input(
-        file="test.jpeg"
-    )
-
-    print(
-        result2
-    )
-
-    print(
-        "\n===== TEST 3: DOCUMENT + QUESTION ====="
-    )
-
-    result3 = process_input(
-        text="Bu belgenin amacı nedir?",
-        file="test.jpeg",
-    )
-
-    print(
-        result3
-    )
-
-    print(
-        "\n===== TEST 4: INVALID ====="
-    )
-
-    result4 = process_input()
-
-    print(
-        result4
-    )
