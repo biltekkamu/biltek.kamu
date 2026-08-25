@@ -20,14 +20,18 @@ from typing import List, Dict, Any, Optional, Tuple
 
 
 # =====================================================
-# PDF2IMAGE
+# PDF ENGINES (PyMuPDF / pdf2image)
 # =====================================================
 
 try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
+
+try:
     from pdf2image import convert_from_path
-
     PDF2IMAGE_AVAILABLE = True
-
 except ImportError:
     PDF2IMAGE_AVAILABLE = False
 
@@ -820,25 +824,19 @@ class MultiPageOCRPipeline:
     ):
 
         try:
-
-            self.ocr_engine = (
-    PaddleOCR(
-        lang=lang,
-        device="cpu",
-        enable_mkldnn=False,
-        use_doc_orientation_classify=False,
-        use_doc_unwarping=False,
-        use_textline_orientation=False,
-    )
-)
-
+            self.ocr_engine = PaddleOCR(
+                use_angle_cls=True,
+                lang=lang,
+                use_gpu=False,
+                enable_mkldnn=True,
+                show_log=False,
+            )
         except Exception:
-
-            self.ocr_engine = (
-                PaddleOCR(
-                    lang=lang,
-                    device="cpu",
-                )
+            self.ocr_engine = PaddleOCR(
+                lang=lang,
+                use_gpu=False,
+                enable_mkldnn=True,
+                show_log=False,
             )
 
         self.post_processor = (
@@ -850,94 +848,60 @@ class MultiPageOCRPipeline:
         file_path: str,
     ) -> List[np.ndarray]:
 
-        path = Path(
-            file_path
-        )
-
-        ext = (
-            path.suffix.lower()
-        )
-
+        path = Path(file_path)
+        ext = path.suffix.lower()
         images = []
 
         # =============================================
         # PDF
         # =============================================
-
         if ext == ".pdf":
+            # 1. الخيار الأول والأسرع: PyMuPDF (لا يعتمد على Poppler خارجي)
+            if PYMUPDF_AVAILABLE:
+                try:
+                    doc = fitz.open(file_path)
+                    for page in doc:
+                        pix = page.get_pixmap(dpi=150)
+                        img_np = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
+                        if pix.n == 4:
+                            img_np = cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGR)
+                        elif pix.n == 3:
+                            img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+                        images.append(img_np)
+                    doc.close()
+                    if images:
+                        return images
+                except Exception:
+                    images = []
 
-            if not PDF2IMAGE_AVAILABLE:
-
-                raise ImportError(
-                    "pdf2image kütüphanesi kurulu değil."
-                )
-
-            # Poppler path artık kullanıcıya özel değil.
-            # .env dosyasından okunur.
-            poppler_bin = os.getenv(
-                "POPPLER_PATH"
-            )
-
-            try:
-
-                pil_images = (
-                    convert_from_path(
+            # 2. الخيار الثاني: pdf2image
+            if PDF2IMAGE_AVAILABLE:
+                poppler_bin = os.getenv("POPPLER_PATH")
+                try:
+                    pil_images = convert_from_path(
                         file_path,
-    dpi=120,
-    poppler_path=(
-        poppler_bin
-        if poppler_bin
-        else None
-                        ),
+                        dpi=120,
+                        poppler_path=(poppler_bin if poppler_bin else None),
                     )
-                )
+                    for pil_img in pil_images:
+                        image_np = np.array(pil_img)
+                        images.append(cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
+                    return images
+                except Exception as error:
+                    raise RuntimeError(
+                        f"PDF dönüştürülemedi. PyMuPDF veya Poppler kurulumunu kontrol edin. Hata: {error}"
+                    ) from error
 
-            except Exception as error:
-
-                raise RuntimeError(
-                    (
-                        "PDF görüntüye dönüştürülemedi. "
-                        "Poppler kurulumunu ve "
-                        "POPPLER_PATH değerini kontrol edin. "
-                        f"Hata: {error}"
-                    )
-                ) from error
-
-            for pil_img in pil_images:
-
-                image_np = np.array(
-                    pil_img
-                )
-
-                images.append(
-                    cv2.cvtColor(
-                        image_np,
-                        cv2.COLOR_RGB2BGR,
-                    )
-                )
+            raise ImportError("PDF işleme için 'pymupdf' veya 'pdf2image' kütüphanesi gerekli.")
 
         # =============================================
         # IMAGE
         # =============================================
-
         else:
-
-            img = cv2.imread(
-                file_path
-            )
-
+            img = cv2.imread(file_path)
             if img is None:
-
-                raise ValueError(
-                    (
-                        "Dosya okunamadı: "
-                        f"{file_path}"
-                    )
-                )
-
-            images.append(
-                img
-            )
+                raise ValueError(f"Dosya okunamadı: {file_path}")
+            images.append(img)
 
         return images
 
@@ -1253,8 +1217,6 @@ if __name__ == "__main__":
         )
     )
 
-    # Test dosyasını ortam değişkeninden alabilir.
-    # Böylece kullanıcıya özel path kodda tutulmaz.
     sample_path = os.getenv(
         "OCR_TEST_FILE"
     )
