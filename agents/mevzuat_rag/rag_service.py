@@ -1,15 +1,17 @@
 """
 rag_service.py
-Ollama + ChromaDB + BM25 + Query Transformation + RRF + Reranker
+ChromaDB + BM25 + Query Transformation + RRF + Reranker + Evren LLM-Large
 """
 
 import hashlib
 import logging
+import os
 import time
 from typing import Any, Generator
 
 import chromadb
-from ollama import Client
+from dotenv import load_dotenv
+from openai import OpenAI
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
@@ -17,15 +19,27 @@ from .config import (
     CHROMA_COLLECTION,
     CHROMA_DB_DIR,
     EMBEDDING_MODEL,
-    LLM_MODEL,
-    OLLAMA_SERVER_URL,
     MAX_DISTANCE,
     TOP_K,
 )
 
+load_dotenv()
 
 logger = logging.getLogger("rag-service")
 
+# =========================================================
+# Evren LLM-Large API Configuration
+# =========================================================
+
+LLM_MODEL = "llm-large"
+EVREN_API_KEY = os.getenv("EVREN_API_KEY", "")
+EVREN_BASE_URL = "https://evren-llmapi.ssyz.org.tr/v1"
+
+evren_client = OpenAI(
+    api_key=EVREN_API_KEY,
+    base_url=EVREN_BASE_URL,
+    timeout=60.0,
+)
 
 # =========================================================
 # Models
@@ -206,15 +220,6 @@ logger.info(
 
 
 # =========================================================
-# Ollama
-# =========================================================
-
-ollama_client = Client(
-    host=OLLAMA_SERVER_URL
-)
-
-
-# =========================================================
 # Cache
 # =========================================================
 
@@ -350,7 +355,7 @@ Arama sorgusu:
 
     try:
 
-        response = ollama_client.chat(
+        response = evren_client.chat.completions.create(
             model=LLM_MODEL,
             messages=[
                 {
@@ -358,13 +363,13 @@ Arama sorgusu:
                     "content": prompt,
                 }
             ],
-            options={
-                "temperature": 0.0
-            },
+            temperature=0.0,
+            max_tokens=150,
         )
 
         transformed = (
             response
+            .choices[0]
             .message
             .content
             .strip()
@@ -938,9 +943,9 @@ def build_context(
         )
 
         text = item.get(
-    "text",
-    "",
-)[:1800]
+            "text",
+            "",
+        )[:1800]
 
         sections.append(
             f"[KAYNAK {index}] "
@@ -999,7 +1004,7 @@ Kısa ve net bir değerlendirme.
 3. Birden fazla kaynak varsa en güncel ve ilgili olanı önceliklendir.
 4. Kaynaklar soruyla ilgili değilse: "Bu bilgi mevcut belgelerde bulunamadı." de.
 5. Ceza miktarlarını tam ve doğru yaz — "birkaç yıl" gibi belirsiz ifadeler kullanma.
-6. Yanıtta [KAYNAK X] gibi iç referanslar kullanma — sadece kanun ve madde adını yaz.
+6. Yanıtta [KAYNAK X] gibi iç referanslar kullanma — فقط kanun ve madde adını yaz.
 7. Kullanıcı ayrıntılı açıklama istemedikçe orta uzunlukta, açık ve öz cevap ver.
 
 ━━━ KAYNAKLAR ━━━
@@ -1015,7 +1020,7 @@ def compress_history(history: list[dict]) -> list[dict]:
         return history
 
     old_history = history[:-2]
-    recent      = history[-2:]
+    recent = history[-2:]
 
     old_text = "\n".join(
         f"{h['role'].upper()}: {h['content'][:200]}"
@@ -1029,15 +1034,16 @@ def compress_history(history: list[dict]) -> list[dict]:
 Özet:"""
 
     try:
-        response = ollama_client.chat(
+        response = evren_client.chat.completions.create(
             model=LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0.1},
+            temperature=0.1,
+            max_tokens=150,
         )
-        summary = response.message.content.strip()
+        summary = response.choices[0].message.content.strip()
 
         compressed = [
-            {"role": "user",      "content": f"[Önceki konuşma özeti: {summary}]"},
+            {"role": "user", "content": f"[Önceki konuşma özeti: {summary}]"},
             {"role": "assistant", "content": "Anladım."},
         ] + recent
 
@@ -1071,7 +1077,7 @@ def build_messages(
             if not isinstance(history_item, dict):
                 continue
 
-            role    = history_item.get("role")
+            role = history_item.get("role")
             content = history_item.get("content")
 
             if role not in {"user", "assistant"}:
@@ -1081,12 +1087,12 @@ def build_messages(
                 continue
 
             messages.append({
-                "role":    role,
+                "role": role,
                 "content": content.strip(),
             })
 
     messages.append({
-        "role":    "user",
+        "role": "user",
         "content": question,
     })
 
@@ -1203,14 +1209,11 @@ ZORUNLU KURALLAR:
 
     start_time = time.time()
 
-    response = ollama_client.chat(
+    response = evren_client.chat.completions.create(
         model=LLM_MODEL,
         messages=messages,
-        options={
-            "temperature": 0.0,
-            "num_ctx": 8192,
-            "num_predict": 800,
-        },
+        temperature=0.0,
+        max_tokens=600,
     )
 
     elapsed = round(
@@ -1221,6 +1224,7 @@ ZORUNLU KURALLAR:
 
     answer = (
         response
+        .choices[0]
         .message
         .content
     )
@@ -1261,24 +1265,15 @@ def generate_answer_stream(
         history,
     )
 
-    stream = ollama_client.chat(
+    stream = evren_client.chat.completions.create(
         model=LLM_MODEL,
         messages=messages,
         stream=True,
-        options={
-            "temperature": 0.1,
-        "num_ctx": 8192,
-        "num_predict": 1200,
-        },
+        temperature=0.1,
+        max_tokens=1000,
     )
 
     for chunk in stream:
-
-        token = (
-            chunk
-            .message
-            .content
-        )
-
+        token = chunk.choices[0].delta.content
         if token:
             yield token
