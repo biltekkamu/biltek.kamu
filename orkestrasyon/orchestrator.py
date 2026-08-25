@@ -4,6 +4,8 @@ import sys
 import time
 
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
+import os
 
 from agents.ocr.main_pipeline import MultiPageOCRPipeline
 from agents.evrak_analiz.service import EvrakAnalysisService
@@ -66,8 +68,10 @@ ocr_pipeline = MultiPageOCRPipeline(
 # SHARED QWEN LLM
 # =====================================================
 
-evrak_llm = ChatOllama(
-    model="qwen2.5:7b",
+evrak_llm = ChatOpenAI(
+    model="llm-fast",
+    api_key=os.getenv("EVREN_API_KEY"),
+    base_url="https://evren-llmapi.ssyz.org.tr/v1",
     temperature=0.0,
 )
 

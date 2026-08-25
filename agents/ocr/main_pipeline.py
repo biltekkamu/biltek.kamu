@@ -822,12 +822,15 @@ class MultiPageOCRPipeline:
         try:
 
             self.ocr_engine = (
-                PaddleOCR(
-                    lang=lang,
-                    device="cpu",
-                    enable_mkldnn=False,
-                )
-            )
+    PaddleOCR(
+        lang=lang,
+        device="cpu",
+        enable_mkldnn=False,
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False,
+    )
+)
 
         except Exception:
 
@@ -880,10 +883,11 @@ class MultiPageOCRPipeline:
                 pil_images = (
                     convert_from_path(
                         file_path,
-                        poppler_path=(
-                            poppler_bin
-                            if poppler_bin
-                            else None
+    dpi=120,
+    poppler_path=(
+        poppler_bin
+        if poppler_bin
+        else None
                         ),
                     )
                 )

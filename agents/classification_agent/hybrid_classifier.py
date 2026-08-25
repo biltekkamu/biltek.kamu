@@ -63,7 +63,12 @@ class HybridDocumentClassifier:
         sep_id = self.tokenizer.sep_token_id
         pad_id = self.tokenizer.pad_token_id
 
-        token_ids = self.tokenizer.encode(text, add_special_tokens=False)
+        token_ids = self.tokenizer.encode(
+    text,
+    add_special_tokens=False,
+    verbose=False
+)
+        
         if len(token_ids) <= (max_len - 2):
             combined = [cls_id] + token_ids + [sep_id]
         else:
