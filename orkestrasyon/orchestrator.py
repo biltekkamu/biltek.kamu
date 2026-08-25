@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 import sys
+import time
 
 from langchain_ollama import ChatOllama
 
@@ -36,10 +37,6 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 # =====================================================
 # DOGRULAMA AGENT IMPORT
 # =====================================================
-# Dogrulama agent kendi dosyalarında:
-# from models import ...
-# şeklinde import kullandığı için klasörü Python path'e ekliyoruz.
-# Agent kodunun mantığına dokunmuyoruz.
 
 validation_agent_dir = (
     BASE_DIR
@@ -231,15 +228,8 @@ def extract_explicit_legal_references(
     refs = []
 
     patterns = [
-
-        # Örnek:
-        # 5271 sayılı CMK'nın 147 nci maddesi
         r"(\d{4})\s+say[ıi]l[ıi].{0,40}?(\d{1,4})\s*(?:nci|ncı|inci|ıncı|uncu|üncü|madde|maddesi)",
 
-        # Örnek:
-        # CMK 147
-        # TCK 188
-        # VUK 242
         r"\b(CMK|TCK|VUK)\s*['’]?(?:nun|nın|nin|un|ün)?\s*(\d{1,4})",
     ]
 
@@ -310,10 +300,6 @@ def build_rag_question(
         if part
     )
 
-    # -------------------------------------------------
-    # Belgede açıkça yazılan mevzuatları çıkar
-    # -------------------------------------------------
-
     legal_refs = extract_explicit_legal_references(
         raw_text or ""
     )
@@ -330,10 +316,6 @@ def build_rag_question(
             + "."
         )
 
-    # -------------------------------------------------
-    # DOCUMENT + QUESTION
-    # -------------------------------------------------
-
     if user_question:
 
         return (
@@ -341,10 +323,6 @@ def build_rag_question(
             f"{legal_context} "
             f"Kullanıcı sorusu: {user_question}"
         )
-
-    # -------------------------------------------------
-    # DOCUMENT ONLY
-    # -------------------------------------------------
 
     return (
         f"{document_context}."
@@ -361,6 +339,8 @@ def process_input(
     file=None,
 ):
 
+    total_start = time.perf_counter()
+
     # -------------------------------------------------
     # ROUTER
     # -------------------------------------------------
@@ -372,9 +352,20 @@ def process_input(
 
     if route == "invalid":
 
+        total_time = (
+            time.perf_counter()
+            - total_start
+        )
+
         return {
             "status": "error",
             "message": "Geçerli bir giriş bulunamadı.",
+            "timing": {
+                "total": round(
+                    total_time,
+                    2,
+                )
+            },
         }
 
     # -------------------------------------------------
@@ -404,9 +395,21 @@ def process_input(
             "mevzuat_rag"
         )
 
+        rag_start = time.perf_counter()
+
         rag_result = run_real_rag(
             question=text,
             top_k=5,
+        )
+
+        rag_time = (
+            time.perf_counter()
+            - rag_start
+        )
+
+        print(
+            f"[TIMING] RAG: "
+            f"{rag_time:.2f} sec"
         )
 
         state.rag_result = (
@@ -416,10 +419,31 @@ def process_input(
         state.status = "completed"
         state.current_step = "completed"
 
+        total_time = (
+            time.perf_counter()
+            - total_start
+        )
+
+        print(
+            f"[TIMING] TOTAL: "
+            f"{total_time:.2f} sec"
+        )
+
         return {
             "status": state.status,
             "route": route,
             "rag": rag_result,
+
+            "timing": {
+                "rag": round(
+                    rag_time,
+                    2,
+                ),
+                "total": round(
+                    total_time,
+                    2,
+                ),
+            },
         }
 
     # =================================================
@@ -436,6 +460,8 @@ def process_input(
 
     state.current_step = "ocr"
 
+    ocr_start = time.perf_counter()
+
     ocr_result = (
         ocr_pipeline.process_file(
             str(file_path),
@@ -445,6 +471,16 @@ def process_input(
                 or "doc_001"
             ),
         )
+    )
+
+    ocr_time = (
+        time.perf_counter()
+        - ocr_start
+    )
+
+    print(
+        f"\n[TIMING] OCR: "
+        f"{ocr_time:.2f} sec"
     )
 
     if hasattr(
@@ -489,6 +525,10 @@ def process_input(
 
     state.current_step = (
         "classification"
+    )
+
+    classification_start = (
+        time.perf_counter()
     )
 
     if (
@@ -575,6 +615,16 @@ def process_input(
             "top_probabilities": {},
         }
 
+    classification_time = (
+        time.perf_counter()
+        - classification_start
+    )
+
+    print(
+        f"[TIMING] Classification: "
+        f"{classification_time:.2f} sec"
+    )
+
     # =================================================
     # 3. REAL EVRAK ANALIZ
     # =================================================
@@ -582,6 +632,8 @@ def process_input(
     state.current_step = (
         "evrak_analiz"
     )
+
+    evrak_start = time.perf_counter()
 
     page_count = (
         document_info.get(
@@ -676,6 +728,16 @@ def process_input(
         )
     )
 
+    evrak_time = (
+        time.perf_counter()
+        - evrak_start
+    )
+
+    print(
+        f"[TIMING] Evrak Analysis: "
+        f"{evrak_time:.2f} sec"
+    )
+
     if hasattr(
         evrak_result,
         "model_dump",
@@ -724,6 +786,8 @@ def process_input(
         "mevzuat_rag"
     )
 
+    rag_start = time.perf_counter()
+
     rag_question = (
         build_rag_question(
 
@@ -748,6 +812,16 @@ def process_input(
         top_k=5,
     )
 
+    rag_time = (
+        time.perf_counter()
+        - rag_start
+    )
+
+    print(
+        f"[TIMING] RAG: "
+        f"{rag_time:.2f} sec"
+    )
+
     state.rag_result = (
         rag_result
     )
@@ -760,6 +834,10 @@ def process_input(
         "birim_yonlendirme"
     )
 
+    routing_start = (
+        time.perf_counter()
+    )
+
     routing_result = route_unit(
 
         evrak_analysis=(
@@ -769,6 +847,16 @@ def process_input(
         rag_result=(
             rag_result
         ),
+    )
+
+    routing_time = (
+        time.perf_counter()
+        - routing_start
+    )
+
+    print(
+        f"[TIMING] Routing: "
+        f"{routing_time:.2f} sec"
     )
 
     if hasattr(
@@ -791,20 +879,30 @@ def process_input(
     )
 
     # =================================================
-    # 6. RESMI YAZI
+    # 6. RESMI YAZI — MOCK
     # =================================================
-    # ŞİMDİLİK MOCK
-    # Gerçek resmi yazı agent yüklendiğinde burası değişecek.
 
     state.current_step = (
         "resmi_yazi"
     )
+
+    resmi_start = time.perf_counter()
 
     resmi_yazi_result = (
         mock_resmi_yazi(
             analysis_result,
             rag_result,
         )
+    )
+
+    resmi_time = (
+        time.perf_counter()
+        - resmi_start
+    )
+
+    print(
+        f"[TIMING] Resmi Yazi: "
+        f"{resmi_time:.2f} sec"
     )
 
     state.official_letter = (
@@ -887,7 +985,6 @@ def process_input(
             state.official_letter
         ),
 
-        # Validation çalışmadan önce geçici blok
         "validation": {
             "status": "pending",
             "issues": [],
@@ -903,10 +1000,24 @@ def process_input(
         "dogrulama"
     )
 
+    validation_start = (
+        time.perf_counter()
+    )
+
     validation_result = (
         validation_service.validate_document(
             final_json
         )
+    )
+
+    validation_time = (
+        time.perf_counter()
+        - validation_start
+    )
+
+    print(
+        f"[TIMING] Validation: "
+        f"{validation_time:.2f} sec"
     )
 
     if hasattr(
@@ -924,17 +1035,112 @@ def process_input(
             validation_result
         )
 
-    # Gerçek validation sonucunu final JSON'a yaz
     final_json["validation"] = (
         validation_result_dict
     )
 
     # =================================================
-    # COMPLETED
+    # COMPLETE + TOTAL TIMING
     # =================================================
 
     state.current_step = "completed"
     state.status = "completed"
+
+    total_time = (
+        time.perf_counter()
+        - total_start
+    )
+
+    print(
+        "\n=============================="
+    )
+
+    print(
+        f"[TIMING] OCR: "
+        f"{ocr_time:.2f} sec"
+    )
+
+    print(
+        f"[TIMING] Classification: "
+        f"{classification_time:.2f} sec"
+    )
+
+    print(
+        f"[TIMING] Evrak Analysis: "
+        f"{evrak_time:.2f} sec"
+    )
+
+    print(
+        f"[TIMING] RAG: "
+        f"{rag_time:.2f} sec"
+    )
+
+    print(
+        f"[TIMING] Routing: "
+        f"{routing_time:.2f} sec"
+    )
+
+    print(
+        f"[TIMING] Resmi Yazi: "
+        f"{resmi_time:.2f} sec"
+    )
+
+    print(
+        f"[TIMING] Validation: "
+        f"{validation_time:.2f} sec"
+    )
+
+    print(
+        f"[TIMING] TOTAL: "
+        f"{total_time:.2f} sec"
+    )
+
+    print(
+        "==============================\n"
+    )
+
+    final_json["timing"] = {
+
+        "ocr": round(
+            ocr_time,
+            2,
+        ),
+
+        "classification": round(
+            classification_time,
+            2,
+        ),
+
+        "evrak_analysis": round(
+            evrak_time,
+            2,
+        ),
+
+        "rag": round(
+            rag_time,
+            2,
+        ),
+
+        "routing": round(
+            routing_time,
+            2,
+        ),
+
+        "official_writing": round(
+            resmi_time,
+            2,
+        ),
+
+        "validation": round(
+            validation_time,
+            2,
+        ),
+
+        "total": round(
+            total_time,
+            2,
+        ),
+    }
 
     return final_json
 
@@ -945,27 +1151,17 @@ def process_input(
 
 if __name__ == "__main__":
 
-    # =================================================
-    # TEST 1 — QUESTION
-    # =================================================
-
     print(
         "\n===== TEST 1: QUESTION ====="
     )
 
     result1 = process_input(
-        text=(
-            "Hırsızlık suçunun cezası nedir?"
-        )
+        text="Hırsızlık suçunun cezası nedir?"
     )
 
     print(
         result1
     )
-
-    # =================================================
-    # TEST 2 — DOCUMENT
-    # =================================================
 
     print(
         "\n===== TEST 2: DOCUMENT ====="
@@ -979,28 +1175,18 @@ if __name__ == "__main__":
         result2
     )
 
-    # =================================================
-    # TEST 3 — DOCUMENT + QUESTION
-    # =================================================
-
     print(
         "\n===== TEST 3: DOCUMENT + QUESTION ====="
     )
 
     result3 = process_input(
-        text=(
-            "Bu belgenin amacı nedir?"
-        ),
+        text="Bu belgenin amacı nedir?",
         file="test.jpeg",
     )
 
     print(
         result3
     )
-
-    # =================================================
-    # TEST 4 — INVALID
-    # =================================================
 
     print(
         "\n===== TEST 4: INVALID ====="
