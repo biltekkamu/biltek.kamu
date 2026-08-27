@@ -827,16 +827,12 @@ class MultiPageOCRPipeline:
             self.ocr_engine = PaddleOCR(
                 use_angle_cls=True,
                 lang=lang,
-                use_gpu=False,
-                enable_mkldnn=True,
-                show_log=False,
+                enable_mkldnn=False,
             )
         except Exception:
             self.ocr_engine = PaddleOCR(
                 lang=lang,
-                use_gpu=False,
-                enable_mkldnn=True,
-                show_log=False,
+                enable_mkldnn=False,
             )
 
         self.post_processor = (

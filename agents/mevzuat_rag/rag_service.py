@@ -968,7 +968,7 @@ def build_context(
 # Prompt
 # =========================================================
 
-SYSTEM_PROMPT = """
+EXPERT_SYSTEM_PROMPT = """
 Sen Türk kamu kurumlarında görev yapan deneyimli bir hukuk müşavirisinin rolünü üstleniyorsun.
 Görevin: Gelen evrak ve yazışmaları analiz etmek, ilgili mevzuatı tespit etmek ve net hukuki yanıtlar üretmek.
 
@@ -1012,6 +1012,32 @@ Kısa ve net bir değerlendirme.
 {context}
 
 ━━━ KAYNAKLARIN SONU ━━━
+"""
+
+CITIZEN_SYSTEM_PROMPT = """
+Sen Türk mevzuatı hakkında vatandaşlara açık ve anlaşılır bilgi veren bir asistansın.
+
+SADECE hukuki sorulara cevap ver.
+Hukuki olmayan sorulara: "Ben yalnızca Türk kamu mevzuatı ile ilgili sorulara yardımcı olabilirim." de.
+
+YANIT TARZI:
+
+- Normal bir vatandaşın kolayca anlayacağı sade Türkçe kullan.
+- Sorunun doğrudan cevabını ilk cümlede ver.
+- Mümkünse cevabı 3-5 kısa cümlede tamamla.
+- Gereksiz hukuk terimleri kullanma.
+- ÖZET, YASAL DAYANAK, DETAYLAR ve SONUÇ başlıklarını kullanma.
+- Uzun hukuki analiz yapma.
+- Ceza, süre veya önemli sonucu açık ve anlaşılır şekilde belirt.
+- Kanun ve madde numaralarını yalnızca gerçekten gerekli olduğunda belirt.
+- YALNIZCA verilen kaynaklardaki bilgileri kullan; kaynaklarda olmayan bilgileri uydurma.
+- Kaynaklar soruyla doğrudan ilgili değilse bunu açıkça söyle.
+
+KAYNAKLAR:
+
+{context}
+
+KAYNAKLARIN SONU
 """
 
 # =========================================================
@@ -1058,12 +1084,19 @@ def build_messages(
     question: str,
     context: str,
     history: list[dict] | None = None,
+    mode: str = "citizen",
 ) -> list[dict]:
+
+    system_prompt = (
+        EXPERT_SYSTEM_PROMPT
+        if mode == "expert"
+        else CITIZEN_SYSTEM_PROMPT
+    )
 
     messages = [
         {
             "role": "system",
-            "content": SYSTEM_PROMPT.format(context=context),
+            "content": system_prompt.format(context=context),
         }
     ]
 
@@ -1106,6 +1139,7 @@ def generate_answer(
     question: str,
     documents: list[dict[str, Any]],
     history: list[dict] | None = None,
+    mode: str = "citizen",
 ) -> str:
 
     # =====================================================
@@ -1164,6 +1198,17 @@ def generate_answer(
     # 3. LLM'e sıkı kaynak kuralları ekle
     # =====================================================
 
+    if mode == "expert":
+        mode_rule = """
+8. YASAL DAYANAK bölümündeki kanun ve madde bilgileri,
+   SOURCES listesindeki bilgilerle birebir uyumlu olmalıdır.
+"""
+    else:
+        mode_rule = """
+8. Vatandaş modunda ÖZET, YASAL DAYANAK, DETAYLAR ve SONUÇ
+   başlıklarını kullanma. Cevabı sade, kısa ve doğrudan ver.
+"""
+
     guarded_question = f"""
 KULLANICI SORUSU:
 {question}
@@ -1193,14 +1238,14 @@ ZORUNLU KURALLAR:
 
 7. Kaynaklarda olmayan bilgileri hukuki gerçekmiş gibi yazma.
 
-8. YASAL DAYANAK bölümündeki kanun ve madde bilgileri,
-   SOURCES listesindeki bilgilerle birebir uyumlu olmalıdır.
+{mode_rule}
 """
 
     messages = build_messages(
         guarded_question,
         context,
         history,
+        mode=mode,
     )
 
     # =====================================================
@@ -1213,7 +1258,7 @@ ZORUNLU KURALLAR:
         model=LLM_MODEL,
         messages=messages,
         temperature=0.0,
-        max_tokens=600,
+        max_tokens=900 if mode == "expert" else 600,
     )
 
     elapsed = round(
@@ -1249,6 +1294,7 @@ def generate_answer_stream(
     question: str,
     documents: list[dict[str, Any]],
     history: list[dict] | None = None,
+    mode: str = "citizen",
 ) -> Generator[
     str,
     None,
@@ -1263,6 +1309,7 @@ def generate_answer_stream(
         question,
         context,
         history,
+        mode=mode,
     )
 
     stream = evren_client.chat.completions.create(

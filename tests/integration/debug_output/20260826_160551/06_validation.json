@@ -1,0 +1,96 @@
+{
+  "status": "invalid",
+  "issues": [
+    {
+      "field": "evrak_analysis.entities.kisi",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan 'Burcu KÖKSAL (Afyonkarahisar Belediye Başkanı)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.kisi",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan 'Moussa K. GATEA (Müşteki/Irak uyruklu)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.kisi",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan 'Fath TOPUZ (Araştırma Görevlisi/Vali Yardımcısı)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.kurum",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan 'T.C. AFYONKARAHİSAR VALİLİĞİ' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.kurum",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan 'Afyonkarahisar Belediyesi' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.tarihler",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan '30/05/2024 (Belge Tarihi)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.tarihler",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan '24/05/2024 (Onay Tarihi)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.tarihler",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan '27/05/2024 (Örev Emri Tarihi)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.tarihler",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan '06/06/2024 (Son İfade Teslim Tarihi)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.sayi_no",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan 'F.T.2024/2 (Belge Sayısı)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.sayi_no",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan '43556 (Örev Emri Sayısı)' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "evrak_analysis.entities.kanun_mevzuat",
+      "type": "entity_grounding_error",
+      "severity": "medium",
+      "message": "Çıkarılan '5271 sayılı CMK (Ceza Muhakemesi Kanunu) 147. Madde' değeri OCR metninde doğrulanamadı."
+    },
+    {
+      "field": "routing.selected_department",
+      "type": "routing_mismatch",
+      "severity": "medium",
+      "message": "Belge konusu 'bilgi islem' ile ilişkili görünmektedir ancak 'Ceza İşleri Birimi' birimine yönlendirilmiştir."
+    },
+    {
+      "field": "evrak_analysis.document_type",
+      "type": "classification_mismatch",
+      "severity": "high",
+      "message": "Belge, bir soruşturma kapsamında şahıslardan ifade alınmasını talep eden ve yasal uyarılar içeren resmi bir 'davetiye/cagri' niteliğindedir. 'Bildirim/Tebligat' genellikle bir sonucun veya bilginin taraf iletilmesini ifade eder. Bu bağlamda belge türü 'davetiye' veya 'resmi_yazi' olarak sınıflandırılmalıdır."
+    },
+    {
+      "field": "rag.answer",
+      "type": "rag_grounding_error",
+      "severity": "high",
+      "message": "RAG cevabı, belgedeki 'ifade vermemiş sayılacağı' ibaresinin CMK 147'ye aykırı olduğunu iddia ederek belgenin hukuki geçerliliğini sorgulamaktadır. Ancak görev tanımımız yalnızca metin analizi ve tutarlılık kontrolüdür; hukuki yorum veya mevzuat uyumluluğu denetimi değildir. Ayrıca, Valilik Makamı tarafından yapılan bu tür çağrılar idari soruşturma veya disiplin süreçlerinde kullanılabilecek bir usul olabilir ve RAG çıktısı, kaynak metinlerdeki CMK maddelerinin ceza muhakemesi sürecine (savcılık/hakim) ait olduğunu belirtse de, belgenin içeriği ile bu yasal dayanak arasındaki ilişkiyi 'çelişki' olarak etiketlemek yerine, belgenin niteliğini doğru sınıflandırmak (davetiye) daha uygun bir yaklaşımdır. Mevcut RAG cevabı, belgenin içeriğini yanlış yorumlayarak (idari bir çağrıyı ceza muhakemesi zorlaması gibi algılayıp reddederek) anlamsal bir zıtlık yaratmaktadır."
+    }
+  ],
+  "confidence": 0.0
+}

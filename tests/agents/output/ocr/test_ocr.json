@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "document_info": {
+    "document_id": "ocr_test_001",
+    "file_name": "test.jpeg",
+    "file_type": "jpeg",
+    "page_count": 1,
+    "language": "tr"
+  },
+  "input": {
+    "clean_text": "T.C\nAFYONKARAHÍSAR VALILIGI\nSayi :F.T.2024/2\n30/05/2024\nKonu :lfade istemi.\nSayin: Burcu KÖKSAL\nAfyonkarahisar Belediye Başkanı\nAfyonkarahisar Valilik Makaminın 24/05/2024 günlü onay ve 27/05/2024 gün ve 43556 sayıls\nörev emirleri uyarınca tarafimdan yürütülmekte olan araştırma nedeniyle;\nMüşteki Irak uyruklu Moussa K. GATEA'nin spor salonu açma talebi ile ilgili belediyenin\nstediği gerekli evrakları hazırlayıp tamamladığını, belediyeye teslim ettiğini ve teslim edildiğine dair\nerhangi bir alındı belgesi verilmedigini bu süreçte defalarca bekletildiğini, \"istersen ağzınla kus tut\nine de bu dükkan açılmayacak, Burcu Hanim söz verdi sözünü tutacak\" denilerek ruhsat verilmediği\niddialarına ilişkin olarak yazili ifadenizi, 5271 savil CMK'nun 147 nci maddesinde yazılı hak\ne yükümlülükler ile bir avukatın hukuki yardımından vararlanabileceginiz göz önünde tutularak en geç\n6/06/2024 tarihine kadar aşağıdaki adrese göndermenizi, aksi halde ifade vermemiş sayılacağınizın\nilinmesini rica ederim.\nAraştırma Görevlisi\nFath TOPUZ\nVali Yardımcısi",
+    "metadata": {
+      "sayi": "R",
+      "tarih": "30/05/2024",
+      "konu": "lfade istemi. Sayin: Burcu KÖKSAL",
+      "recipient": null
+    },
+    "tables": [],
+    "vision": {
+      "has_signature": true,
+      "has_stamp": false
+    }
+  }
+}

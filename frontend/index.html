@@ -1,419 +1,246 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BİLTEK KAMU | Akıllı Belge Yönetimi</title>
-
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BİLTEK Kamu</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
+  <div class="app-shell">
 
-  <div class="background-glow glow-one"></div>
-  <div class="background-glow glow-two"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img src="biltek-logo.jpg" alt="BİLTEK" class="brand-logo" />
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-logo">
-        BK
-      </div>
-
-      <div>
-        <h1>BİLTEK KAMU</h1>
-        <p>Akıllı Kamu Belge Yönetim Sistemi</p>
-      </div>
-    </div>
-
-    <div class="system-status">
-      <span class="status-dot"></span>
-      Sistem Hazır
-    </div>
-  </header>
-
-
-  <main class="container">
-
-    <!-- HERO -->
-    <section class="hero">
-
-      <div class="hero-badge">
-        Yapay Zekâ Destekli Belge İşleme
-      </div>
-
-      <h2>
-        Kamu belgelerini
-        <span>akıllı şekilde analiz edin.</span>
-      </h2>
-
-      <p>
-        Belgenizi yükleyin. Sistem içeriği analiz etsin,
-        sınıflandırsın, ilgili mevzuatı bulsun ve doğru birime yönlendirsin.
-      </p>
-
-    </section>
-
-
-    <!-- UPLOAD CARD -->
-    <section class="upload-card">
-
-      <div class="section-header">
         <div>
-          <span class="section-number">01</span>
-          <h3>Belge Yükle</h3>
+          <div class="brand-name">BİLTEK KAMU</div>
+          <div class="brand-sub">
+            Yapay zekâ destekli kamu asistanı
+          </div>
         </div>
-
-        <span class="file-types">
-          PDF · JPG · JPEG · PNG
-        </span>
       </div>
 
+      <button class="new-chat" id="newChatBtn">
+        ＋ Yeni Sohbet
+      </button>
 
-      <div id="dropZone" class="drop-zone">
+      <div class="history-head">
+        <span>Geçmiş</span>
 
-        <input
-          id="fileInput"
-          type="file"
-          accept=".pdf,.png,.jpg,.jpeg"
-          hidden
-        />
+        <button class="ghost small" id="clearHistoryBtn">
+          Temizle
+        </button>
+      </div>
 
-        <div class="upload-icon">
-          ↑
-        </div>
+      <div class="history-list" id="historyList"></div>
 
-        <h4>Belgenizi buraya sürükleyin</h4>
+      <div class="sidebar-footer">
+        <div class="privacy-dot"></div>
+        Sohbet geçmişi bu cihazda tutulur
+      </div>
+    </aside>
 
-        <p>
-          veya bilgisayarınızdan bir dosya seçin
-        </p>
+    <main class="main">
 
-        <button id="selectFileBtn" class="secondary-btn">
-          Dosya Seç
+      <header class="topbar">
+
+        <button class="mobile-menu" id="mobileMenuBtn">
+          ☰
         </button>
 
+        <div
+          class="mode-switch"
+          role="tablist"
+          aria-label="Yanıt modu"
+        >
+
+          <button
+            class="mode-btn active"
+            data-mode="citizen"
+          >
+            <span>👤</span>
+            Vatandaş Modu
+          </button>
+
+          <button
+            class="mode-btn"
+            data-mode="expert"
+          >
+            <span>⚖️</span>
+            Uzman / Hukukçu Modu
+          </button>
+
+        </div>
+
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          Sistem hazır
+        </div>
+
+      </header>
+
+      <section class="chat-stage">
+
+        <div class="welcome" id="welcome">
+
+          <div class="welcome-mark">
+            BT
+          </div>
+
+          <h1>
+            Size nasıl yardımcı olabilirim?
+          </h1>
+
+          <p>
+            Mevzuat hakkında soru sorun veya bir belge yükleyin.
+            Yanıt seviyesini yukarıdaki moddan değiştirebilirsiniz.
+          </p>
+
+          <div class="quick-actions">
+
+            <button
+              class="quick"
+              data-prompt="Bu belgenin amacı nedir?"
+            >
+              Belgenin amacını açıkla
+            </button>
+
+            <button
+              class="quick"
+              data-prompt="Bu konuyla ilgili mevzuatı açıklar mısın?"
+            >
+              İlgili mevzuatı bul
+            </button>
+
+            <button
+              class="quick"
+              data-prompt="Bu belge için hangi birim yetkilidir?"
+            >
+              İlgili birimi belirle
+            </button>
+
+          </div>
+
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+      </section>
+
+      <div class="composer-wrap">
+
+        <div
+          class="attachment-preview hidden"
+          id="attachmentPreview"
+        >
+
+          <div class="file-icon">
+            DOC
+          </div>
+
+          <div class="file-meta">
+            <strong id="fileName"></strong>
+            <span id="fileSize"></span>
+          </div>
+
+          <button
+            class="remove-file"
+            id="removeFileBtn"
+          >
+            ×
+          </button>
+
+        </div>
+
+        <div class="composer">
+
+          <label
+            class="attach-btn"
+            title="Belge yükle"
+          >
+
+            <input
+              id="fileInput"
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              hidden
+            />
+
+            📎
+
+          </label>
+
+          <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="Mesajınızı yazın veya bir belge yükleyin..."
+          ></textarea>
+
+          <button
+            class="send-btn"
+            id="sendBtn"
+            title="Gönder"
+          >
+            ➜
+          </button>
+
+        </div>
+
+        <div class="composer-note">
+          BİLTEK hukuki bilgilendirme sunar;
+          kritik işlemler için resmi kaynakları kontrol edin.
+        </div>
+
       </div>
 
+    </main>
 
-      <div id="selectedFile" class="selected-file hidden">
+  </div>
 
-        <div class="file-icon">
-          DOC
+  <div
+    class="modal-backdrop hidden"
+    id="modalBackdrop"
+  >
+
+    <section class="modal">
+
+      <div class="modal-head">
+
+        <div>
+
+          <div
+            class="eyebrow"
+            id="modalEyebrow"
+          >
+            KAYNAKLAR
+          </div>
+
+          <h2 id="modalTitle">
+            Kullanılan Kaynaklar
+          </h2>
+
         </div>
 
-        <div class="file-details">
-          <strong id="fileName"></strong>
-          <span id="fileSize"></span>
-        </div>
-
-        <button id="clearFileBtn" class="clear-btn">
+        <button
+          class="modal-close"
+          id="modalCloseBtn"
+        >
           ×
         </button>
 
       </div>
 
-
-      <div class="question-box">
-
-        <label for="questionInput">
-          Belge hakkında sorunuz
-          <span>Opsiyonel</span>
-        </label>
-
-        <textarea
-          id="questionInput"
-          placeholder="Örn: Bu belgenin amacı nedir?"
-          rows="3"
-        ></textarea>
-
-      </div>
-
-
-      <button id="analyzeBtn" class="primary-btn" disabled>
-        <span>Belgeyi Analiz Et</span>
-        <span class="arrow">→</span>
-      </button>
+      <div
+        class="modal-body"
+        id="modalBody"
+      ></div>
 
     </section>
 
+  </div>
 
-    <!-- PROCESSING -->
-    <section id="processingSection" class="processing-card hidden">
-
-      <div class="spinner"></div>
-
-      <div class="processing-content">
-        <span class="processing-label">
-          BELGE İŞLENİYOR
-        </span>
-
-        <h3 id="processingTitle">
-          Belge analiz ediliyor...
-        </h3>
-
-        <p id="processingText">
-          Yapay zekâ modelleri belge üzerinde çalışıyor.
-        </p>
-
-        <div class="progress-track">
-          <div id="progressBar" class="progress-bar"></div>
-        </div>
-
-        <div id="processingStep" class="processing-step">
-          OCR hazırlanıyor...
-        </div>
-      </div>
-
-    </section>
-
-
-    <!-- RESULTS -->
-    <section id="resultsSection" class="results hidden">
-
-      <div class="results-title-row">
-
-        <div>
-          <span class="eyebrow">
-            ANALİZ SONUCU
-          </span>
-
-          <h2>Belge Analizi Tamamlandı</h2>
-        </div>
-
-        <div id="validationBadge" class="validation-badge">
-          Kontrol Ediliyor
-        </div>
-
-      </div>
-
-
-      <!-- METRICS -->
-      <div class="metrics-grid">
-
-        <article class="metric-card">
-          <span class="metric-label">
-            Belge Türü
-          </span>
-
-          <strong id="classificationLabel">
-            —
-          </strong>
-
-          <span id="classificationConfidence" class="metric-detail">
-            —
-          </span>
-        </article>
-
-
-        <article class="metric-card">
-          <span class="metric-label">
-            Yönlendirilen Birim
-          </span>
-
-          <strong id="routingDepartment">
-            —
-          </strong>
-
-          <span id="routingConfidence" class="metric-detail">
-            —
-          </span>
-        </article>
-
-
-        <article class="metric-card">
-          <span class="metric-label">
-            Analiz Güveni
-          </span>
-
-          <strong id="analysisConfidence">
-            —
-          </strong>
-
-          <span class="metric-detail">
-            Evrak Analizi
-          </span>
-        </article>
-
-
-        <article class="metric-card">
-          <span class="metric-label">
-            Toplam Süre
-          </span>
-
-          <strong id="totalTiming">
-            —
-          </strong>
-
-          <span class="metric-detail">
-            İşlem süresi
-          </span>
-        </article>
-
-      </div>
-
-
-      <!-- DOCUMENT OVERVIEW -->
-      <div class="result-grid">
-
-        <article class="result-card large-card">
-
-          <div class="card-title">
-            <span>Belge Özeti</span>
-          </div>
-
-          <p id="documentSummary" class="summary-text">
-            —
-          </p>
-
-
-          <div class="info-row">
-
-            <div>
-              <span>Konu</span>
-              <strong id="documentTopic">—</strong>
-            </div>
-
-            <div>
-              <span>Amaç</span>
-              <strong id="documentPurpose">—</strong>
-            </div>
-
-            <div>
-              <span>Niyet</span>
-              <strong id="documentIntent">—</strong>
-            </div>
-
-          </div>
-
-        </article>
-
-
-        <article class="result-card">
-
-          <div class="card-title">
-            <span>Belge Bilgileri</span>
-          </div>
-
-          <div class="info-list">
-
-            <div>
-              <span>Dosya</span>
-              <strong id="documentFileName">—</strong>
-            </div>
-
-            <div>
-              <span>Sayfa</span>
-              <strong id="documentPageCount">—</strong>
-            </div>
-
-            <div>
-              <span>Dil</span>
-              <strong id="documentLanguage">—</strong>
-            </div>
-
-          </div>
-
-        </article>
-
-      </div>
-
-
-      <!-- RAG -->
-      <article class="result-card full-card">
-
-        <div class="card-title title-with-badge">
-          <span>Mevzuat Analizi</span>
-
-          <span id="ragConfidence" class="small-badge">
-            —
-          </span>
-        </div>
-
-        <pre id="ragAnswer" class="rag-answer">—</pre>
-
-        <div class="source-title">
-          Kullanılan Kaynaklar
-        </div>
-
-        <div id="sourcesList" class="sources-list"></div>
-
-      </article>
-
-
-      <!-- ROUTING -->
-      <article class="result-card full-card">
-
-        <div class="card-title">
-          <span>Yönlendirme Açıklaması</span>
-        </div>
-
-        <p id="routingReason" class="summary-text">
-          —
-        </p>
-
-      </article>
-
-
-      <!-- VALIDATION -->
-      <article class="result-card full-card">
-
-        <div class="card-title title-with-badge">
-          <span>Doğrulama ve Kontrol</span>
-
-          <span id="validationConfidence" class="small-badge">
-            —
-          </span>
-        </div>
-
-        <div id="issuesList" class="issues-list"></div>
-
-      </article>
-
-
-      <!-- TIMING -->
-      <article class="result-card full-card">
-
-        <div class="card-title">
-          <span>Performans</span>
-        </div>
-
-        <div id="timingGrid" class="timing-grid"></div>
-
-      </article>
-
-
-      <!-- OCR -->
-      <article class="result-card full-card">
-
-        <details>
-
-          <summary>
-            OCR Metnini Görüntüle
-          </summary>
-
-          <pre id="ocrText" class="ocr-text"></pre>
-
-        </details>
-
-      </article>
-
-
-      <button id="newAnalysisBtn" class="new-analysis-btn">
-        Yeni Belge Analiz Et
-      </button>
-
-    </section>
-
-  </main>
-
-
-  <footer>
-    <span>BİLTEK KAMU</span>
-    <span>Yapay Zekâ Destekli Kamu Teknolojileri</span>
-  </footer>
-
-
-  <script src="./app.js"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
