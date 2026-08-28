@@ -1,31 +1,31 @@
 from .agent import (
-    ResmiYaziAgent,              # الكلاس الرئيسي للـResmi Yazı Agent
-    determine_writing_type,      # تحديد نوع الكتاب من الـStructured Data
-    generate_official_writing,   # الواجهة العامة لتشغيل الـAgent
+    ResmiYaziAgent,             
+    determine_writing_type,    
+    generate_official_writing,   
 )
 from .context_builder import (
-    prepare_official_writing_input,  # تحويل بيانات الـAgents السابقة إلى Structured Data
-    render_context,                  # تحويل الـStructured Data إلى Context للـLLM
+    prepare_official_writing_input, 
+    render_context,                 
 )
 from .schema import (
-    OfficialWritingAgentResult,    # الشكل النهائي لنتيجة الـAgent
-    OfficialWritingInput,          # شكل البيانات الداخلة للـAgent
-    OfficialWritingLLMResponse,    # شكل رد الـLLM: body فقط
-    OfficialWritingPayload,        # بيانات الكتاب النهائي
-    OfficialWritingValidation,     # نتيجة الـValidation
+    OfficialWritingAgentResult,   
+    OfficialWritingInput,         
+    OfficialWritingLLMResponse,  
+    OfficialWritingPayload,       
+    OfficialWritingValidation,    
 )
 
 __all__ = [
-    "ResmiYaziAgent",              # تصدير الـAgent الرئيسي
-    "determine_writing_type",      # تصدير تحديد نوع الكتاب
-    "generate_official_writing",   # تصدير دالة التوليد
+    "ResmiYaziAgent",            
+    "determine_writing_type",     
+    "generate_official_writing",  
 
-    "prepare_official_writing_input",  # تصدير بناء الـStructured Data
-    "render_context",                  # تصدير بناء الـContext
+    "prepare_official_writing_input", 
+    "render_context",                 
 
-    "OfficialWritingAgentResult",    # تصدير Schema النتيجة النهائية
-    "OfficialWritingInput",          # تصدير Schema الإدخال
-    "OfficialWritingLLMResponse",    # تصدير Schema رد الـLLM
-    "OfficialWritingPayload",        # تصدير Payload الكتاب
-    "OfficialWritingValidation",     # تصدير نتيجة التحقق
+    "OfficialWritingAgentResult",   
+    "OfficialWritingInput",          
+    "OfficialWritingLLMResponse",   
+    "OfficialWritingPayload",       
+    "OfficialWritingValidation",    
 ]

@@ -1,6 +1,6 @@
-from __future__ import annotations  # يسمح باستخدام الـType Hints بطريقة مرنة وتأجيل تقييمها
-from .schema import OfficialWritingInput, OfficialWritingType  # استيراد Schema البيانات الداخلة ونوع الكتاب الرسمي
-from .context_builder import render_context  # استيراد دالة تحويل الـStructured Data إلى Context يفهمه الـLLM
+from __future__ import annotations 
+from .schema import OfficialWritingInput, OfficialWritingType  
+from .context_builder import render_context  
 
 
 SYSTEM_PROMPT = """Sen, kamu kurumları için Türkçe resmî yazışma metni oluşturan bir LLM'sin.
@@ -24,26 +24,24 @@ KESİN KURALLAR:
 
 
 def build_official_writing_prompt(
-    data: OfficialWritingInput,  # الـStructured Data القادم من الـContext Builder
-    writing_type: OfficialWritingType,  # نوع الكتاب الرسمي المحدد
-) -> str:  # الدالة ترجع Prompt كنص
+    data: OfficialWritingInput, 
+    writing_type: OfficialWritingType, 
+) -> str: 
 
     return (
-        f"{SYSTEM_PROMPT}\n\n"  # إضافة الـSystem Prompt والتعليمات الأساسية
+        f"{SYSTEM_PROMPT}\n\n"  
 
-        f"### SEÇİLMİŞ YAZI TÜRÜ ###\n"  # عنوان يوضح نوع الكتاب
-        f"{writing_type}\n\n"  # إدخال نوع الكتاب الفعلي مثل talep_yazisi
+        f"### SEÇİLMİŞ YAZI TÜRÜ ###\n"  
+        f"{writing_type}\n\n" 
 
-        f"{render_context(data)}\n\n"  # تحويل Structured Data إلى Context وإرساله للـLLM
+        f"{render_context(data)}\n\n"  
 
-        "### ÇIKTI TALİMATI ###\n"  # بداية تعليمات الإخراج
+        "### ÇIKTI TALİMATI ###\n"  
 
         "Yalnızca resmî yazının BODY/METİN bölümünü üret. "
-        # اطلب من الـLLM إنتاج BODY/METİN فقط
+       
 
         "Template'in diğer bölümlerini oluşturma veya değiştirme. "
-        # ممنوع إنشاء أو تعديل باقي أجزاء الـTemplate
 
         "Çıktı yalnızca schema'daki body alanını içermelidir."
-        # الناتج يجب أن يحتوي فقط على body حسب الـSchema
     )

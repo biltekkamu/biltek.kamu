@@ -1,12 +1,8 @@
 from __future__ import annotations
-# يسمح باستخدام type hints الحديثة مثل list[str] و set[str] بشكل آمن.
 
 import re
-# مكتبة Regular Expressions لفحص التواريخ والمراجع القانونية
-# والتأكد من عدم ظهور أجزاء من الـTemplate داخل الـbody.
 
 from typing import Any
-# Any تسمح للدوال بالتعامل مع قيم من أنواع مختلفة.
 
 from .schema import (
     OfficialWritingInput,
@@ -14,11 +10,6 @@ from .schema import (
     OfficialWritingType,
     OfficialWritingValidation,
 )
-# نستورد الـSchemas الخاصة بالـResmi Yazı:
-# OfficialWritingInput = البيانات الداخلة للـAgent.
-# OfficialWritingLLMResponse = النتيجة التي يرجعها الـLLM.
-# OfficialWritingType = أنواع الكتابات الرسمية المسموحة.
-# OfficialWritingValidation = نتيجة عملية التحقق.
 
 
 # =========================================================
@@ -29,16 +20,6 @@ _DATE_PATTERNS = [
     r"\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b",
     r"\b\d{4}[./-]\d{1,2}[./-]\d{1,2}\b",
 ]
-# هذه الأنماط تبحث عن التواريخ داخل النص.
-#
-# أمثلة:
-# 25.08.2026
-# 25/08/2026
-# 25-08-2026
-# 2026-08-25
-#
-# الهدف:
-# التأكد أن الـLLM لم يخترع تاريخاً غير موجود في الـContext.
 
 
 # =========================================================
@@ -50,18 +31,6 @@ _LEGAL_PATTERNS = [
     r"\b(?:TCK|CMK|VUK)\b\s*(?:'?[ıninunün]+)?\s*\d{1,4}\b",
     r"\bMadde\s+\d{1,4}\b",
 ]
-# هذه الأنماط تبحث عن المراجع القانونية.
-#
-# أمثلة:
-# 657 sayılı
-# TCK 123
-# CMK 100
-# VUK 213
-# Madde 10
-#
-# الهدف:
-# إذا الـLLM أضاف قانوناً أو مادة غير موجودة بالـRAG/Context
-# نعتبر ذلك اختراعاً للمعلومة القانونية.
 
 
 # =========================================================
@@ -74,9 +43,6 @@ _VALID_WRITING_TYPES = {
     "bilgilendirme_yazisi",
     "basvuru_cevabi",
 }
-# هذه هي أنواع الكتابة الرسمية المسموحة فقط.
-#
-# الـAgent لا يستطيع إنشاء نوع جديد من عنده.
 
 
 # =========================================================
@@ -84,33 +50,25 @@ _VALID_WRITING_TYPES = {
 # =========================================================
 
 def _normalize(text: str) -> str:
-    """
-    يوحّد النص حتى تصبح المقارنة بين النصوص أسهل.
-    """
+   
 
     return re.sub(
         r"\s+",
         " ",
         text or "",
     ).strip().casefold()
-    # يحوّل المسافات المتعددة إلى مسافة واحدة.
-    # يحذف الفراغات من البداية والنهاية.
-    # casefold يجعل المقارنة غير حساسة لحالة الأحرف.
-
+   
 
 # =========================================================
 # FLATTEN VALUES
 # =========================================================
 
 def _flatten_values(value: Any) -> list[str]:
-    """
-    يحوّل القيم المتداخلة داخل dict/list إلى قائمة نصوص بسيطة.
-    """
+   
 
     if value is None:
         return []
-    # إذا القيمة غير موجودة، نرجع قائمة فارغة.
-
+    
     if isinstance(value, dict):
         result: list[str] = []
 
@@ -120,9 +78,7 @@ def _flatten_values(value: Any) -> list[str]:
             )
 
         return result
-    # إذا كانت القيمة Dictionary:
-    # ندخل إلى القيم الموجودة بداخله ونستخرجها بشكل recursive.
-
+   
     if isinstance(value, (list, tuple, set)):
         result: list[str] = []
 
@@ -132,24 +88,17 @@ def _flatten_values(value: Any) -> list[str]:
             )
 
         return result
-    # نفس الشيء إذا كانت القيمة List أو Tuple أو Set.
 
     text = str(value).strip()
 
     return [text] if text else []
-    # أي قيمة عادية نحولها إلى String.
-    # وإذا كانت فارغة لا نضيفها.
-
-
+    
 # =========================================================
 # COLLECT SOURCE TEXT
 # =========================================================
 
 def _collect_source_text(data: OfficialWritingInput) -> str:
-    """
-    يجمع كل المعلومات الموجودة في Structured Data وRAG
-    ضمن نص واحد حتى يستخدمها الـvalidator للمقارنة.
-    """
+  
 
     values = [
         data.document_type,
@@ -178,9 +127,7 @@ def _collect_source_text(data: OfficialWritingInput) -> str:
 # =========================================================
 
 def _find_dates(text: str) -> set[str]:
-    """
-    يستخرج جميع التواريخ الموجودة داخل النص.
-    """
+   
 
     found: set[str] = set()
 
@@ -190,13 +137,11 @@ def _find_dates(text: str) -> set[str]:
             text or "",
             flags=re.IGNORECASE,
         )
-        # نبحث عن التواريخ باستخدام الأنماط السابقة.
 
         for match in matches:
             found.add(
                 _normalize(match)
             )
-            # نضيف التاريخ بعد توحيد شكله.
 
     return found
 
@@ -208,9 +153,7 @@ def _find_dates(text: str) -> set[str]:
 def _find_legal_references(
     text: str,
 ) -> set[str]:
-    """
-    يستخرج المراجع القانونية الموجودة في النص.
-    """
+   
 
     found: set[str] = set()
 
@@ -220,13 +163,11 @@ def _find_legal_references(
             text or "",
             flags=re.IGNORECASE,
         )
-        # نبحث عن كل نوع من المراجع القانونية.
 
         for match in matches:
             found.add(
                 _normalize(match)
             )
-            # نضيف المرجع القانوني بعد توحيده.
 
     return found
 
@@ -239,32 +180,24 @@ def _check_added_legal_references(
     data: OfficialWritingInput,
     body: str,
 ) -> list[str]:
-    """
-    يتأكد أن الـLLM لم يخترع أساساً قانونياً جديداً.
-    """
+   
 
     source_text = _collect_source_text(data)
-    # نحصل على كل المعلومات الأصلية التي يحق للـLLM استخدامها.
 
     source_legal = _find_legal_references(
         source_text
     )
-    # نستخرج القوانين والمراجع القانونية الموجودة في الـContext.
 
     body_legal = _find_legal_references(
         body
     )
-    # نستخرج القوانين والمراجع القانونية التي كتبها الـLLM.
 
     added = body_legal - source_legal
-    # إذا ظهر مرجع في body لكنه غير موجود في الـContext:
-    # هذا يعني أن الـLLM أضاف مرجعاً قانونياً من عنده.
 
     return [
         f"Context'te bulunmayan hukuki referans: {reference}"
         for reference in sorted(added)
     ]
-    # نرجع قائمة بالأخطاء.
 
 
 # =========================================================
@@ -275,12 +208,10 @@ def _check_added_dates(
     data: OfficialWritingInput,
     body: str,
 ) -> list[str]:
-    """
-    يتأكد أن الـLLM لم يخترع تاريخاً جديداً.
-    """
+   
 
     source_text = _collect_source_text(data)
-    # نجمع البيانات الأصلية.
+    #نجمع البيانات الأصلية.
 
     source_dates = _find_dates(
         source_text

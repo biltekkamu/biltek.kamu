@@ -13,11 +13,9 @@ MOCK_FILE = BASE_DIR / "tests" / "mock_data" / "test.json"
 
 
 def main():
-    # 1. قراءة بيانات الاختبار
     with open(MOCK_FILE, "r", encoding="utf-8") as f:
         mock = json.load(f)
 
-    # 2. إنشاء LLM السحابي (Evren llm-large)
     llm = ChatOpenAI(
         model="llm-large",
         api_key=os.getenv("EVREN_API_KEY", "sk-evren-team03-6409be56daaf89d55f82a4a9f12b10f1"),
@@ -26,7 +24,6 @@ def main():
         timeout=60.0,
     )
 
-    # 3. تشغيل Resmî Yazı Agent
     result = generate_official_writing(
         evrak_analysis=mock["evrak_analysis"],
         rag_result=mock.get("rag"),
@@ -34,7 +31,6 @@ def main():
         llm_client=llm,
     )
 
-    # 4. طباعة النتيجة
     print("\n========== RESULT ==========")
 
     print("TYPE:")

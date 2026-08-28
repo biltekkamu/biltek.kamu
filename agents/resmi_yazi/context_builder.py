@@ -1,60 +1,58 @@
-from __future__ import annotations  # السماح باستخدام Type Hints بشكل مرن
+from __future__ import annotations 
 
-from typing import Any, Mapping, Optional  # أنواع البيانات المستخدمة
+from typing import Any, Mapping, Optional 
 
-from .schema import OfficialWritingInput  # الـSchema الموحد الذي سيرسل للـLLM
+from .schema import OfficialWritingInput 
 
 
 def _clean(value: Any) -> Any:
-    # تنظيف أي قيمة قبل وضعها داخل الـStructured Data
 
     if value is None:
-        return None  # تجاهل القيم الفارغة
+        return None  
 
     if isinstance(value, str):
-        value = value.strip()  # إزالة المسافات الزائدة
-        return value or None  # إذا أصبحت فارغة نرجع None
+        value = value.strip()  
+        return value or None  
 
     if isinstance(value, Mapping):
-        cleaned = {}  # إنشاء Dictionary جديد للقيم المنظفة
+        cleaned = {} 
 
         for key, item in value.items():
-            cleaned_value = _clean(item)  # تنظيف كل قيمة داخله
+            cleaned_value = _clean(item) 
 
             if cleaned_value is not None:
-                cleaned[str(key)] = cleaned_value  # الاحتفاظ بالقيم الموجودة فقط
+                cleaned[str(key)] = cleaned_value  
 
-        return cleaned  # إرجاع الـDictionary المنظف
+        return cleaned 
 
     if isinstance(value, (list, tuple)):
         return [
             cleaned_value
             for item in value
             if (cleaned_value := _clean(item)) is not None
-        ]  # تنظيف عناصر القوائم وإزالة الفارغ منها
+        ]  
 
-    return value  # إرجاع باقي أنواع البيانات كما هي
+    return value 
 
 
 def _compact_rag(
     rag_result: Optional[Mapping[str, Any]],
 ) -> Optional[dict[str, Any]]:
-    # تقليل RAG إلى المعلومات القانونية المفيدة فقط
 
     if not rag_result:
-        return None  # إذا ما في RAG نرجع None
+        return None 
 
-    answer = _clean(rag_result.get("answer"))  # أخذ نتيجة RAG الأساسية
+    answer = _clean(rag_result.get("answer")) 
 
-    sources = rag_result.get("sources") or []  # أخذ المصادر القانونية
+    sources = rag_result.get("sources") or []  
 
-    compact_sources = []  # قائمة للمصادر بعد تنظيفها
+    compact_sources = []  
 
     for source in sources:
-        # المرور على كل مصدر قانوني
+        
 
         if not isinstance(source, Mapping):
-            continue  # تجاهل أي مصدر غير منظم
+            continue 
 
         item = {
             key: _clean(source.get(key))
@@ -64,18 +62,18 @@ def _compact_rag(
                 "madde",
             )
             if _clean(source.get(key)) is not None
-        }  # الاحتفاظ فقط بمعلومات المصدر الموجودة
+        }  
 
         if item:
-            compact_sources.append(item)  # إضافة المصدر إذا كان يحتوي بيانات
+            compact_sources.append(item) 
 
     if answer is None and not compact_sources:
-        return None  # إذا RAG فارغ فعلياً لا نرسله
+        return None 
 
     return {
         "answer": answer,
         "sources": compact_sources,
-    }  # إرجاع RAG المنظم
+    } 
 
 
 def prepare_official_writing_input(
@@ -84,72 +82,71 @@ def prepare_official_writing_input(
     routing_result: Optional[Mapping[str, Any]] = None,
     ocr_result: Optional[Mapping[str, Any]] = None,
 ) -> OfficialWritingInput:
-    # تجميع نتائج الـAgents السابقة وتحويلها إلى Structured Data واحد
+    
 
     analysis = (
         evrak_analysis.model_dump()
         if hasattr(evrak_analysis, "model_dump")
         else dict(evrak_analysis or {})
-    )  # تحويل Evrak Analysis إلى Dictionary
+    ) 
 
     routing = (
         routing_result.model_dump()
         if hasattr(routing_result, "model_dump")
         else dict(routing_result or {})
-    )  # تحويل Routing إلى Dictionary
+    ) 
 
     ocr = (
         ocr_result.model_dump()
         if hasattr(ocr_result, "model_dump")
         else dict(ocr_result or {})
-    )  # تحويل OCR إلى Dictionary
+    ) 
 
-    # استخراج Metadata من OCR إذا كانت موجودة
     ocr_input = ocr.get("input") or {}
     metadata = ocr_input.get("metadata") or {}
 
-    document_type = analysis.get("document_type")  # أخذ نوع الوثيقة من Evrak Analysis
+    document_type = analysis.get("document_type") 
 
     if isinstance(document_type, Mapping):
-        document_type = document_type.get("label")  # استخراج label إذا كان النوع Object
+        document_type = document_type.get("label")  
 
-    selected_department = routing.get("selected_department")  # أخذ الوحدة من Routing
+    selected_department = routing.get("selected_department")  
 
     if selected_department is None:
-        selected_department = routing.get("recommended_unit")  # دعم اسم الحقل البديل
+        selected_department = routing.get("recommended_unit")  
 
     data = {
         # =========================
         # Evrak Analysis
         # =========================
 
-        "document_type": _clean(document_type),  # نوع الوثيقة
+        "document_type": _clean(document_type), 
 
         "topic": _clean(
             analysis.get("topic")
             or analysis.get("subject")
             or metadata.get("konu")
-        ),  # موضوع الوثيقة
+        ), 
 
         "purpose": _clean(
             analysis.get("purpose")
-        ),  # الغرض من الوثيقة
+        ), 
 
         "intent": _clean(
             analysis.get("intent")
-        ),  # الـIntent
+        ), 
 
         "summary": _clean(
             analysis.get("summary")
-        ),  # ملخص الوثيقة
+        ), 
 
         "entities": _clean(
             analysis.get("entities") or {}
-        ),  # الكيانات المستخرجة
+        ), 
 
         "key_information": _clean(
             analysis.get("key_information") or {}
-        ),  # المعلومات المهمة
+        ),  
 
         # =========================
         # OCR Metadata
@@ -165,7 +162,7 @@ def prepare_official_writing_input(
 
         "selected_department": _clean(
             selected_department
-        ),  # الوحدة التي حددها Routing
+        ), 
 
         # =========================
         # RAG
@@ -173,75 +170,69 @@ def prepare_official_writing_input(
 
         "rag": _compact_rag(
             rag_result
-        ),  # الأساس القانوني القادم من RAG
+        ), 
     }
 
-    # ملاحظة:
-    # Sayى / Tarih / Kurum / Muhatap لا يتم توليدها هنا كقيم جديدة.
-    # إذا كانت موجودة ضمن بيانات الـAgents، تبقى ضمن الـContext المرسل للـLLM
-    # حتى يعرف أنها معلومات موجودة مسبقاً ولا يخترعها.
-
+   
     return OfficialWritingInput(
         **data
-    )  # تحويل البيانات إلى OfficialWritingInput
+    )  
 
 
 def render_context(
     data: OfficialWritingInput,
 ) -> str:
-    # تحويل Structured Data إلى نص واضح يدخل إلى الـPrompt
 
     labels = {
-        "document_type": "Belge Türü",  # نوع الوثيقة
-        "topic": "Konu",  # الموضوع
-        "purpose": "Amaç",  # الغرض
-        "intent": "Intent",  # النية
-        "summary": "Özet",  # الملخص
-        "entities": "Varlıklar",  # الكيانات
-        "key_information": "Önemli Bilgiler",  # المعلومات المهمة
-        "sayi": "Sayı",  # رقم المعاملة
-        "tarih": "Tarih",  # التاريخ
-        "recipient": "Muhatap",  # الجهة
-        "selected_department": "Yönlendirilen Birim",  # الوحدة المحددة
-        "rag": "RAG Legal Basis",  # الأساس القانوني
+        "document_type": "Belge Türü",  
+        "topic": "Konu",  
+        "purpose": "Amaç",  
+        "intent": "Intent",  
+        "summary": "Özet",  
+        "entities": "Varlıklar", 
+        "key_information": "Önemli Bilgiler", 
+        "sayi": "Sayı", 
+        "tarih": "Tarih", 
+        "recipient": "Muhatap",  
+        "selected_department": "Yönlendirilen Birim",
+        "rag": "RAG Legal Basis", 
     }
 
     lines = [
         "### RESMÎ YAZI İÇİN YAPILANDIRILMIŞ BAĞLAM ###"
-    ]  # بداية الـContext
+    ]  
 
     for key, label in labels.items():
-        # المرور على كل حقل موجود في الـStructured Data
 
-        value = getattr(data, key, None)  # أخذ قيمة الحقل
+        value = getattr(data, key, None) 
 
         if value is not None and value != {}:
             lines.append(
                 f"- {label}: {value}"
-            )  # إضافة الحقل إلى الـContext
+            ) 
 
     lines.append(
         "### KULLANIM KURALLARI ###"
-    )  # بداية قواعد استخدام البيانات
+    )  
 
     lines.append(
         "Yalnızca yukarıdaki Structured Data ve mevcut RAG bilgilerini kullan."
-    )  # منع اختراع معلومات خارج الـContext
+    )  
 
     lines.append(
         "Context'te bulunmayan Sayı, Tarih, Kurum, Birim, kişi veya hukuki referans üretme."
-    )  # منع اختراع البيانات الحساسة
+    ) 
 
     lines.append(
         "RAG mevcutsa yalnızca verilen hukuki dayanağı kullan."
-    )  # استخدام الأساس القانوني الموجود فقط
+    )  
 
     lines.append(
         "Template'in sabit bölümlerini oluşturma veya değiştirme."
-    )  # منع الـLLM من إنشاء الـTemplate
+    )  
 
     lines.append(
         "Yalnızca Template içinde kullanılacak BODY/METİN içeriğini üret."
-    )  # تحديد مهمة الـLLM بالـBody فقط
+    ) 
 
-    return "\n".join(lines)  # إرجاع الـContext النهائي
+    return "\n".join(lines) 
