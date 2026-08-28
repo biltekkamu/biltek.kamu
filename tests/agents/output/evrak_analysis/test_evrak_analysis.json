@@ -1,0 +1,52 @@
+{
+  "document_type": {
+    "label": "bildirim_tebligat",
+    "confidence": 0.8715
+  },
+  "topic": "İfade İstemi ve İfade Verme Çağrısı",
+  "purpose": "Valilik Makamı nezdinde yürütülen soruşturma kapsamında, şikayetçi (müşteki) tarafından belediye yetkilisine yönelik iddiaların aydınlatılması amacıyla ilgili kişinin yazılı ifadesinin alınması.",
+  "intent": "ifade_verme_cagri",
+  "summary": "Afyonkarahisar Valiliği, Irak uyruklu Moussa K. GATEA'nın spor salonu açma sürecinde Afyonkarahisar Belediye Başkanı Burcu KÖKSAL'a yönelik 'ruhsat verilmediği' ve 'söz tutulmadığı' yönündeki iddialarını araştırmaktadır. Bu kapsamda, şikayetçinin ifadesinin 6 Haziran 2024 tarihine kadar yazılı olarak iletilmesi talep edilmekte, aksi halde ifade vermemiş sayılacağı uyarısı yapılmaktadır.",
+  "entities": {
+    "kisi": [
+      "Burcu KÖKSAL (Afyonkarahisar Belediye Başkanı)",
+      "Moussa K. GATEA (Müşteki/Irak uyruklu)",
+      "Fath TOPUZ (Araştırma Görevlisi)"
+    ],
+    "kurum": [
+      "T.C. AFYONKARAHİSAR VALİLİĞİ",
+      "Afyonkarahisar Belediyesi"
+    ],
+    "tarihler": [
+      "30/05/2024 (Belge Tarihi)",
+      "24/05/2024 (Onay Tarihi)",
+      "27/05/2024 (Örev Emri Tarihi)",
+      "06/06/2024 (Son İfade Teslim Tarihi)"
+    ],
+    "sayilar": [
+      "F.T.2024/2 (Valilik Sayısı)",
+      "43556 (Örev Emri Sayısı)"
+    ],
+    "kanun": [
+      "5271 sayılı CMK'nun 147. maddesi"
+    ]
+  },
+  "key_information": {
+    "sorusturma_konusu": "Irak uyruklu Moussa K. GATEA'nın spor salonu açma talebi ve belediyeden bekletilme/ruhsat alamama iddiaları",
+    "ifade_turu": "Yazılı ifade",
+    "son_teslim_tarihi": "06/06/2024",
+    "hukuki_dayanak": "5271 sayılı CMK m. 147",
+    "avukat_hakki": "İfade vermeden önce avukattan hukuki yardım alınabileceği belirtilmiştir"
+  },
+  "important_points": [
+    "İfade, 6 Haziran 2024 tarihine kadar belirtilen adrese gönderilmelidir.",
+    "Belirtilen süre içinde ifade verilmezse, kişi 'ifade vermemiş' sayılacaktır.",
+    "Şikayetçi, belediyenin gerekli evrakları hazırlayıp teslim ettiğini ancak alındı belgesi verilmediğini ve defalarca bekletildiğini iddia etmektedir.",
+    "Belediye Başkanı Burcu KÖKSAL'ın 'söz verdi, sözünü tutacak' şeklinde ifade kullandığı ve bu nedenle ruhsat verilmediği öne sürülmektedir."
+  ],
+  "missing_information": [
+    "İfadenin gönderileceği spesifik adres bilgisi metinde yer almamaktadır (sadece 'aşağıdaki adrese' denilmiştir).",
+    "İfadenin hangi birime veya savcılığa/valilik birimine iletileceğine dair detaylı posta/kurum adresi eksiktir."
+  ],
+  "analysis_confidence": 0.95
+}

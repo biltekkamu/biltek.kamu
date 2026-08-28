@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "document_info": {
+    "document_id": "ocr_test_001",
+    "file_name": "test.jpeg",
+    "file_type": "jpeg",
+    "page_count": 1,
+    "language": "tr"
+  },
+  "input": {
+    "clean_text": "T.C\nAFYONKARAHiSAR VALiLIGi\nSay:F.T.2024/2\nKonu:lfade istemi\n30/05/2024\nSayinBurcu KOKSAL\nAfyonkarahisar Belediye Baskan\nbilinmesini rica cderim.\nArastirma Gorevlisi\nFath TOPUZ\nVali Yardimcisi\nADRES:",
+    "metadata": {
+      "sayi": "R",
+      "tarih": "30/05/2024",
+      "konu": "lfade istemi 30/05/2024",
+      "recipient": null
+    },
+    "tables": [],
+    "vision": {
+      "has_signature": true,
+      "has_stamp": false
+    }
+  }
+}
