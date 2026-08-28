@@ -35,6 +35,9 @@ LLM_MODEL = "llm-large"
 EVREN_API_KEY = os.getenv("EVREN_API_KEY", "")
 EVREN_BASE_URL = "https://evren-llmapi.ssyz.org.tr/v1"
 
+if not EVREN_BASE_URL.endswith("/"):
+    EVREN_BASE_URL += "/"
+
 evren_client = OpenAI(
     api_key=EVREN_API_KEY,
     base_url=EVREN_BASE_URL,
@@ -967,51 +970,65 @@ def build_context(
 # =========================================================
 # Prompt
 # =========================================================
+EXPERT_SYSTEM_PROMPT = """
+Sen Türk kamu kurumlarında görev yapan deneyimli ve kıdemli bir hukuk müşavirisin.
+Görevin: Gelen evrakı, belge bağlamını ve sağlanan mevzuat kaynaklarını analiz ederek NET, RESMİ ve SONUÇ ODAKLI bir hukuki değerlendirme üretmektir.
 
-SYSTEM_PROMPT = """
-Sen Türk kamu kurumlarında görev yapan deneyimli bir hukuk müşavirisinin rolünü üstleniyorsun.
-Görevin: Gelen evrak ve yazışmaları analiz etmek, ilgili mevzuatı tespit etmek ve net hukuki yanıtlar üretmek.
+SADECE hukuki ve idari mevzuata ilişkin değerlendirmeler yap.
+Hukuki/idari olmayan sorulara: "Ben yalnızca Türk kamu mevzuatı ile ilgili sorulara yardımcı olabilirim." de.
 
-SADECE hukuki sorulara cevap ver.
-Hukuki olmayan sorulara: "Ben yalnızca Türk kamu mevzuatı ile ilgili sorulara yardımcı olabilirim." de.
+━━━ TEMEL İLKELER ━━━
+1. NETLİK VE ÖZLÜLÜK:
+   - Yanıtı ASLA gereksiz yere uzatma. Alakasız kaynakları tek tek madde madde sayarak ("Kaynak 1 alakasızdır, Kaynak 2 trafikle ilgilidir..." gibi) vakit ve yer kaybetme.
+   - Doğrudan belgedeki talebe ve ilgili yasal dayanağa odaklan.
+2. BELGEDEKİ VE KAYNAKLARDAKİ MEVZUAT BİLGİSİ:
+   - Belge metninde açıkça belirtilen bir kanun/madde dayanağı varsa (Örn: 2886 sayılı Kanun m. 51/g - Pazarlık Usulü), bunu temel yasal dayanak olarak kabul et ve değerlendir.
+3. UYDURMA YASAKTIR:
+   - Belgede veya kaynaklarda olmayan varsayımsal hükümleri veya hayali kanunları ekleme.
 
-━━━ YANIT FORMATI ━━━
+━━━ ZORUNLU YANIT FORMATI ━━━
 
 **ÖZET**
-Soruyu kendi cümlelerinle 1-2 cümlede yanıtla.
-Madde metnini AYNEN kopyalama — özetle.
+(Belgedeki talebin ve hukuki durumun amacını açıklayan en fazla 2 net cümle.)
 
 **YASAL DAYANAK**
-- Kanun adı ve numarası
-- İlgili madde numarası
-- Maddenin tam adı
+- Belgedeki Dayanak: [Belgede geçen ilgili Kanun ve Madde numarası]
+- Mevzuat Çerçevesi: [Talep edilen usulün yasal tanımı ve kapsamı]
 
 **DETAYLAR**
-- Temel hüküm ve ceza miktarı
-- Ağırlaştırıcı haller (varsa)
-- Hafifletici haller (varsa)
-- İstisnalar (varsa)
+- Yetki ve Usul: [İşlemin yürütülme usulü, komisyon teşkili ve onay makamının yetki sınırları]
+- İdari Şartlar: [İşlemin gerçekleştirilmesi için aranan temel mevzuat kriterleri]
 
 **SONUÇ**
-Kısa ve net bir değerlendirme.
+(Makam onayına sunulmasında ve ilgili birimce yürütülmesinde hukuki engel bulunup bulunmadığına dair 2-3 cümlelik net nihai kanaat.)
 
 ⚠️ Bu yanıt genel bilgi amaçlıdır. Kesin hukuki işlemler için yetkili makama başvurunuz.
-
-━━━ KURALLAR ━━━
-
-1. YALNIZCA verilen kaynaklardaki bilgileri kullan — asla uydurma.
-2. Kaynaklarda bulunmayan madde numarasını kesinlikle yazma.
-3. Birden fazla kaynak varsa en güncel ve ilgili olanı önceliklendir.
-4. Kaynaklar soruyla ilgili değilse: "Bu bilgi mevcut belgelerde bulunamadı." de.
-5. Ceza miktarlarını tam ve doğru yaz — "birkaç yıl" gibi belirsiz ifadeler kullanma.
-6. Yanıtta [KAYNAK X] gibi iç referanslar kullanma — فقط kanun ve madde adını yaz.
-7. Kullanıcı ayrıntılı açıklama istemedikçe orta uzunlukta, açık ve öz cevap ver.
 
 ━━━ KAYNAKLAR ━━━
 
 {context}
 
 ━━━ KAYNAKLARIN SONU ━━━
+"""
+
+CITIZEN_SYSTEM_PROMPT = """
+Sen Türk mevzuatı hakkında vatandaşlara açık ve anlaşılır bilgi veren bir asistansın.
+
+SADECE hukuki sorulara cevap ver.
+Hukuki olmayan sorulara: "Ben yalnızca Türk kamu mevzuatı ile ilgili sorulara yardımcı olabilirim." de.
+
+YANIT TARZI:
+- Sade, anlaşılır ve doğrudan vatandaşın anlayacağı bir dil kullan.
+- İlk cümlede doğrudan cevabı ver.
+- En fazla 3-5 kısa cümle ile yanıtı tamamla.
+- Kaynakları tek tek açıklama; sadece vatandaşın bilmesi gereken işlem sonucunu, nereye başvuracağını veya usulü belirt.
+- Başlık (ÖZET, DETAYLAR vb.) kullanma.
+
+KAYNAKLAR:
+
+{context}
+
+KAYNAKLARIN SONU
 """
 
 # =========================================================
@@ -1058,12 +1075,19 @@ def build_messages(
     question: str,
     context: str,
     history: list[dict] | None = None,
+    mode: str = "citizen",
 ) -> list[dict]:
+
+    system_prompt = (
+        EXPERT_SYSTEM_PROMPT
+        if mode == "expert"
+        else CITIZEN_SYSTEM_PROMPT
+    )
 
     messages = [
         {
             "role": "system",
-            "content": SYSTEM_PROMPT.format(context=context),
+            "content": system_prompt.format(context=context),
         }
     ]
 
@@ -1106,6 +1130,7 @@ def generate_answer(
     question: str,
     documents: list[dict[str, Any]],
     history: list[dict] | None = None,
+    mode: str = "citizen",
 ) -> str:
 
     # =====================================================
@@ -1164,8 +1189,18 @@ def generate_answer(
     # 3. LLM'e sıkı kaynak kuralları ekle
     # =====================================================
 
+    if mode == "expert":
+        mode_rule = """
+8. YASAL DAYANAK bölümünde, belge bağlamında açıkça belirtilen kanun/maddeyi ve/veya SOURCES listesindeki ilgili hükümleri temel alarak değerlendirme yap.
+"""
+    else:
+        mode_rule = """
+8. Vatandaş modunda ÖZET, YASAL DAYANAK, DETAYLAR ve SONUÇ
+   başlıklarını kullanma. Cevabı sade, kısa ve doğrudan ver.
+"""
+
     guarded_question = f"""
-KULLANICI SORUSU:
+KULLANICI SORUSU / BELGE BAĞLAMI:
 {question}
 
 KULLANILMASINA İZİN VERİLEN MEVZUAT KAYNAKLARI:
@@ -1173,34 +1208,24 @@ KULLANILMASINA İZİN VERİLEN MEVZUAT KAYNAKLARI:
 
 ZORUNLU KURALLAR:
 
-1. Yalnızca yukarıdaki retrieved kaynakları ve verilen CONTEXT'i kullan.
+1. Yalnızca yukarıdaki retrieved kaynakları, incelenen belge bağlamını ve verilen CONTEXT'i kullan.
 
-2. Kaynaklarda bulunmayan hiçbir kanun numarası,
-   madde numarası veya hukuki hüküm üretme.
+2. Kaynaklarda veya belge bağlamında bulunmayan hiçbir kanun numarası, madde numarası veya hukuki hüküm uydurma.
 
-3. Bir kanun veya maddeyi cevapta kullanacaksan,
-   bunun retrieved kaynaklarda açıkça bulunması zorunludur.
+3. Belge metninde açıkça bir kanun ve madde belirtilmişse (Örn: 2886 sayılı Kanun Madde 51/g), bu dayanağı ve usulü ana hukuki zemin olarak değerlendir.
 
-4. Soruyla doğrudan ilişkili olan kaynaklara öncelik ver.
+4. Retrieved kaynaklar arasında soruyla doğrudan ilişkili olan maddelere öncelik ver.
 
-5. Belge metninde açıkça bir kanun ve madde belirtilmişse
-   ve bu madde retrieved kaynaklar arasında mevcutsa,
-   bu kaynağı ana hukuki dayanak olarak önceliklendir.
+5. Olmayan bilgileri hukuki gerçekmiş gibi yazma.
 
-6. Retrieved kaynaklar arasında soruya doğrudan cevap veren
-   bir madde bulunmuyorsa bunu açıkça belirt.
-   Başka bir maddeyi tahmin etme.
-
-7. Kaynaklarda olmayan bilgileri hukuki gerçekmiş gibi yazma.
-
-8. YASAL DAYANAK bölümündeki kanun ve madde bilgileri,
-   SOURCES listesindeki bilgilerle birebir uyumlu olmalıdır.
+{mode_rule}
 """
 
     messages = build_messages(
         guarded_question,
         context,
         history,
+        mode=mode,
     )
 
     # =====================================================
@@ -1213,7 +1238,7 @@ ZORUNLU KURALLAR:
         model=LLM_MODEL,
         messages=messages,
         temperature=0.0,
-        max_tokens=600,
+        max_tokens=900 if mode == "expert" else 600,
     )
 
     elapsed = round(
@@ -1249,31 +1274,104 @@ def generate_answer_stream(
     question: str,
     documents: list[dict[str, Any]],
     history: list[dict] | None = None,
-) -> Generator[
-    str,
-    None,
-    None,
-]:
+    mode: str = "citizen",
+) -> Generator[str, None, None]:
 
-    context = build_context(
-        documents
+    context = build_context(documents)
+
+    source_lines = []
+
+    for index, doc in enumerate(
+        documents,
+        start=1,
+    ):
+        metadata = doc.get(
+            "metadata",
+            {},
+        )
+
+        law_name = metadata.get(
+            "law_name",
+            metadata.get(
+                "document_name",
+                "Bilinmeyen Kaynak",
+            ),
+        )
+
+        law_number = metadata.get(
+            "law_number",
+            "",
+        )
+
+        article = metadata.get(
+            "madde",
+            "",
+        )
+
+        source_lines.append(
+            f"{index}. "
+            f"Kanun: {law_name} | "
+            f"Kanun No: {law_number} | "
+            f"Madde: {article}"
+        )
+
+    allowed_sources = "\n".join(
+        source_lines
     )
 
+    if mode == "expert":
+        mode_rule = """
+8. YASAL DAYANAK bölümünde, belge bağlamında açıkça belirtilen kanun/maddeyi ve/veya SOURCES listesindeki ilgili hükümleri temel alarak değerlendirme yap.
+"""
+    else:
+        mode_rule = """
+8. Vatandaş modunda ÖZET, YASAL DAYANAK, DETAYLAR ve SONUÇ
+başlıklarını kullanma. Cevabı sade, kısa ve doğrudan ver.
+"""
+
+    guarded_question = f"""
+KULLANICI SORUSU / BELGE BAĞLAMI:
+{question}
+
+KULLANILMASINA İZİN VERİLEN MEVZUAT KAYNAKLARI:
+{allowed_sources}
+
+ZORUNLU KURALLAR:
+
+1. Yalnızca yukarıdaki retrieved kaynakları, incelenen belge bağlamını ve verilen CONTEXT'i kullan.
+2. Kaynaklarda veya belge bağlamında bulunmayan kanun veya madde numarası uydurma.
+3. Belge metninde açıkça bir kanun ve madde belirtilmişse (Örn: 2886 sayılı Kanun Madde 51/g), bu dayanağı ve usulü ana hukuki zemin olarak değerlendir.
+4. Soruyla doğrudan ilişkili kaynaklara öncelik ver.
+5. Olmayan bilgileri hukuki gerçekmiş gibi yazma.
+
+{mode_rule}
+"""
+
     messages = build_messages(
-        question,
+        guarded_question,
         context,
         history,
+        mode=mode,
     )
 
     stream = evren_client.chat.completions.create(
         model=LLM_MODEL,
         messages=messages,
         stream=True,
-        temperature=0.1,
-        max_tokens=1000,
+        temperature=0.0,
+        max_tokens=900 if mode == "expert" else 600,
     )
 
     for chunk in stream:
-        token = chunk.choices[0].delta.content
+
+        if not chunk.choices:
+            continue
+
+        token = (
+            chunk.choices[0]
+            .delta
+            .content
+        )
+
         if token:
             yield token

@@ -1,12 +1,4 @@
-"""
-app.py — FastAPI endpoints المحسّنة
-التحسينات:
-- /query/stream endpoint للـ streaming
-- /query مع conversation history
-- Cache تلقائي للأسئلة المتكررة
-- Rate limiting بسيط
-- أفضل error messages
-"""
+
 
 import logging
 import time
@@ -43,11 +35,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("kamu-api")
 
-# ─── Rate Limiting بسيط ────────────────────────────────────────────────────────
-
 _request_counts: dict[str, list[float]] = defaultdict(list)
-RATE_LIMIT     = 30   # طلب
-RATE_WINDOW    = 60   # ثانية
+RATE_LIMIT     = 30   
+RATE_WINDOW    = 60   
 
 
 def check_rate_limit(ip: str) -> bool:
@@ -105,12 +95,7 @@ def health():
 
 @app.post("/query", response_model=QueryResponse)
 def query_rag(item: QueryRequest, request: Request):
-    """
-    الـ endpoint الرئيسي — يدعم:
-    - Cache للأسئلة المتكررة
-    - Conversation history
-    - Rate limiting
-    """
+   
     client_ip = request.client.host if request.client else "unknown"
 
     if not check_rate_limit(client_ip):
@@ -123,7 +108,7 @@ def query_rag(item: QueryRequest, request: Request):
         question = normalize_question(item.question)
         top_k    = item.top_k or 5
 
-        # تحقق من الـ cache أولاً (بدون history)
+      
         if not item.history:
             cached = get_cached(question, top_k)
             if cached:
@@ -165,7 +150,7 @@ def query_rag(item: QueryRequest, request: Request):
             cached=False,
         )
 
-        # احفظ في الـ cache (بدون history)
+  
         if not item.history:
             set_cache(question, top_k, result)
 
@@ -192,10 +177,7 @@ def query_rag(item: QueryRequest, request: Request):
 
 @app.post("/query/stream")
 def query_stream(item: QueryRequest, request: Request):
-    """
-    Streaming endpoint — يرجع الإجابة token by token.
-    مفيد للـ frontend لعرض الإجابة تدريجياً.
-    """
+   
     client_ip = request.client.host if request.client else "unknown"
     if not check_rate_limit(client_ip):
         raise HTTPException(429, "Çok fazla istek.")
@@ -218,14 +200,14 @@ def query_stream(item: QueryRequest, request: Request):
 
 @app.get("/cache/stats")
 def cache_stats():
-    """إحصائيات الـ cache."""
+   
     from rag_service import _answer_cache
     return {"cached_questions": len(_answer_cache)}
 
 
 @app.delete("/cache/clear")
 def cache_clear():
-    """تفريغ الـ cache."""
+   
     from rag_service import _answer_cache
     _answer_cache.clear()
     return {"status": "cache temizlendi"}

@@ -2,7 +2,6 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from ollama import Client
 
-# تهيئة
 embedder    = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 chroma      = chromadb.PersistentClient(path="chroma_db")
 collection  = chroma.get_collection("project_laws")

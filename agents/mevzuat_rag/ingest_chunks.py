@@ -1,11 +1,4 @@
-"""
-ingest_chunks.py — يقرأ JSONL/JSON chunks ويحوّلها إلى embeddings في ChromaDB
 
-الاستخدام:
-    python ingest_chunks.py              # يعالج كل ملفات CHUNKS_DIR
-    python ingest_chunks.py --reset      # يمسح الـ index ويبنيه من صفر
-    python ingest_chunks.py --file x.json  # ملف واحد فقط
-"""
 
 import argparse
 import hashlib
@@ -33,13 +26,11 @@ logger = logging.getLogger("ingest")
 
 
 def make_id(source: str, chunk_id: int, text: str) -> str:
-    """SHA256 كـ ID — يمنع التكرار عند تشغيل الـ script أكثر من مرة."""
     raw = f"{source}|{chunk_id}|{text[:80]}"
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
 def load_chunks_from_file(path: Path) -> list[dict]:
-    """يقرأ JSON أو JSONL ويرجع قائمة chunks موحّدة."""
     raw = path.read_bytes()
     if not raw.strip():
         logger.warning("فارغ: %s", path.name)
@@ -51,7 +42,6 @@ def load_chunks_from_file(path: Path) -> list[dict]:
         logger.error("JSON خطأ: %s — %s", path.name, e)
         return []
 
-    # JSONL: كل سطر كائن منفصل
     if isinstance(data, str):
         chunks = []
         for i, line in enumerate(raw.decode().splitlines()):
@@ -61,18 +51,17 @@ def load_chunks_from_file(path: Path) -> list[dict]:
             try:
                 chunks.append(json.loads(line))
             except json.JSONDecodeError:
-                logger.warning("سطر %d غير صالح في %s", i, path.name)
+                logger.warning("", i, path.name)
         return chunks
 
     if isinstance(data, list):
         return data
 
-    logger.warning("صيغة غير معروفة: %s", path.name)
+    logger.warning("", path.name)
     return []
 
 
 def clean_metadata(meta: dict) -> dict:
-    """ChromaDB يقبل فقط str/int/float/bool في الـ metadata."""
     cleaned = {}
     for k, v in meta.items():
         if isinstance(v, (str, int, float, bool)):
@@ -127,7 +116,6 @@ def ingest(
         if not ids:
             continue
 
-        # تحقق من الـ IDs الموجودة مسبقاً
         try:
             existing = set(collection.get(ids=ids)["ids"])
         except Exception:
@@ -141,11 +129,11 @@ def ingest(
         total_skip += len(existing)
 
         if not new_ids:
-            logger.info("%-45s | كل الـ chunks موجودة مسبقاً (%d)", fpath.name[:45], len(ids))
+            logger.info("%-45s | (%d)", fpath.name[:45], len(ids))
             continue
 
         # Embedding على دفعات
-        logger.info("%-45s | %d chunk جديد يُعالج...", fpath.name[:45], len(new_ids))
+        logger.info("%-45s | %d", fpath.name[:45], len(new_ids))
         for start in range(0, len(new_ids), batch_size):
             end        = min(start + batch_size, len(new_ids))
             batch_ids  = new_ids[start:end]
@@ -172,11 +160,10 @@ def ingest(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Chunk ingestion → ChromaDB")
-    parser.add_argument("--reset", action="store_true", help="امسح الـ collection وابدأ من صفر")
-    parser.add_argument("--file",  help="عالج ملف واحد فقط")
+    parser.add_argument("--reset", action="store_true", help=")
+    parser.add_argument("--file",  help="")
     args = parser.parse_args()
 
-    # تهيئة ChromaDB
     client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
 
     if args.reset:
@@ -190,35 +177,33 @@ def main() -> None:
         name=CHROMA_COLLECTION,
         metadata={"hnsw:space": "cosine"},
     )
-    logger.info("Collection: %s | موجود: %d chunk", CHROMA_COLLECTION, collection.count())
+    logger.info("Collection: %s | : %d chunk", CHROMA_COLLECTION, collection.count())
 
-    # تحميل الـ embedding model
-    logger.info("Embedding model يُحمّل: %s", EMBEDDING_MODEL)
+    logger.info("Embedding model : %s", EMBEDDING_MODEL)
     embedder = SentenceTransformer(EMBEDDING_MODEL)
 
-    # تحديد الملفات
     if args.file:
         files = [CHUNKS_DIR / args.file]
         if not files[0].exists():
-            logger.error("الملف غير موجود: %s", files[0])
+            logger.error("  : %s", files[0])
             sys.exit(1)
     else:
         files = sorted(CHUNKS_DIR.glob("*.json"))
         if not files:
-            logger.error("لا يوجد ملفات JSON في: %s", CHUNKS_DIR)
+            logger.error("   JSON : %s", CHUNKS_DIR)
             sys.exit(1)
 
-    logger.info("%d ملف سيُعالج", len(files))
+    logger.info("%d  ", len(files))
 
     stats = ingest(files, collection, embedder, INGEST_BATCH_SIZE)
 
     print("\n" + "═" * 50)
-    print(f"  ✅ جديد    : {stats['new']:,} chunk")
-    print(f"  ⏭  موجود  : {stats['skipped']:,} chunk")
-    print(f"  ❌ خطأ    : {stats['errors']:,} chunk")
-    print(f"  📦 الإجمالي: {collection.count():,} chunk في ChromaDB")
+    print(f"  ✅     : {stats['new']:,} chunk")
+    print(f"  ⏭    : {stats['skipped']:,} chunk")
+    print(f"  ❌     : {stats['errors']:,} chunk")
+    print(f"  📦 : {collection.count():,} chunk  ChromaDB")
     print("═" * 50)
-    print(f"\n  الخطوة التالية: python app.py")
+    print(f"\n   : python app.py")
 
 
 if __name__ == "__main__":
