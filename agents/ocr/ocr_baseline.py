@@ -19,16 +19,10 @@ class OCRPageResult(BaseModel):
 ocr_engine = PaddleOCR(lang='tr', use_gpu=False)
 
 def sort_reading_order_advanced(blocks: List[OCRBlock], y_threshold: float = 15.0) -> List[OCRBlock]:
-    """
-    خوارزمية ذكية لترتيب النصوص الحكومية والأعمدة المزدوجة:
-    1. تجميع النصوص المتقاربة رئيسياً في نفس السطر (Line Bucket).
-    2. فرز السطور من الأعلى للأسفل (Y).
-    3. فرز العناصر داخل السطر الواحد من اليسار لليمين (X).
-    """
+  
     if not blocks:
         return []
 
-    # حساب الـ Center Y والـ Min X لكل صندوق
     items = []
     for b in blocks:
         y_coords = [pt[1] for pt in b.bbox]
@@ -43,15 +37,12 @@ def sort_reading_order_advanced(blocks: List[OCRBlock], y_threshold: float = 15.
             'y_center': y_center
         })
 
-    # فرز مبدئي حسب الارتفاع
     items.sort(key=lambda item: item['y_center'])
 
-    # تجميع العناصر في خطوط أفقيّة (Line Buckets)
     lines = []
     for item in items:
         matched_line = None
         for line in lines:
-            # حساب متوسط Y للسطر الحالي
             avg_y = sum(i['y_center'] for i in line) / len(line)
             if abs(item['y_center'] - avg_y) <= y_threshold:
                 matched_line = line
@@ -62,12 +53,10 @@ def sort_reading_order_advanced(blocks: List[OCRBlock], y_threshold: float = 15.
         else:
             lines.append([item])
 
-    # فرز السطور حسب Y، وفرز عناصر كل سطر حسب X
     lines.sort(key=lambda line: sum(i['y_center'] for i in line) / len(line))
     
     sorted_blocks = []
     for line in lines:
-        # فرز من اليسار إلى اليمين
         line.sort(key=lambda item: item['x_min'])
         for item in line:
             sorted_blocks.append(item['block'])
@@ -77,7 +66,7 @@ def sort_reading_order_advanced(blocks: List[OCRBlock], y_threshold: float = 15.
 def process_pipeline_ocr(image_path: str, doc_id: str = "doc_001", page_num: int = 1) -> OCRPageResult:
     image = cv2.imread(image_path)
     if image is None:
-        raise ValueError(f"تعذر قراءة الصورة من المسار: {image_path}")
+        raise ValueError(f"    : {image_path}")
 
     results = ocr_engine.ocr(image_path, cls=False)
     
@@ -98,7 +87,6 @@ def process_pipeline_ocr(image_path: str, doc_id: str = "doc_001", page_num: int
             )
             total_confidence += conf
 
-    # تطبيق الترتيب المتقدم
     ordered_blocks = sort_reading_order_advanced(raw_blocks, y_threshold=15.0)
 
     block_count = len(ordered_blocks)
@@ -127,4 +115,4 @@ if __name__ == "__main__":
         result = process_pipeline_ocr(sample_image)
         print(result.model_dump_json(indent=2))
     except Exception as e:
-        print(f"حدث خطأ أثناء التشغيل: {e}")
+        print(f": {e}")

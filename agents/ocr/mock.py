@@ -2,7 +2,6 @@
 import json
 from schemas import StandardAgentOutput, DocumentInfo, StandardInput, MetadataInfo, TableItem, VisionInfo
 
-# Mock 1: إخطار تجنيد رسمي (طابق الصورة المطلوبة تماماً)
 mock_resmi_yazi = StandardAgentOutput(
     success=True,
     document_info=DocumentInfo(
@@ -28,7 +27,6 @@ mock_resmi_yazi = StandardAgentOutput(
     )
 )
 
-# Mock 2: قانون مع جدول تعديلات
 mock_kanun = StandardAgentOutput(
     success=True,
     document_info=DocumentInfo(
@@ -76,4 +74,3 @@ with open("mock_resmi_yazi.json", "w", encoding="utf-8") as f:
 with open("mock_kanun.json", "w", encoding="utf-8") as f:
     f.write(mock_kanun.model_dump_json(indent=2))
 
-print("✅ تم إنشاء وتحديث ملفات الموك لتطابق الهيكل المطلوب تماماً.")

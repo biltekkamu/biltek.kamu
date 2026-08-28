@@ -4,7 +4,6 @@ from paddleocr import PaddleOCR
 from pydantic import BaseModel
 from typing import List
 
-# 1. تعاريف Pydantic الهيكلية
 class OCRBlock(BaseModel):
     text: str
     confidence: float
@@ -17,20 +16,13 @@ class OCRPageResult(BaseModel):
     ocr_quality: str
     blocks: List[OCRBlock]
 
-# 2. تهيئة PaddleOCR
 ocr_engine = PaddleOCR(lang='tr', use_gpu=False)
 
 def sort_reading_order_advanced(blocks: List[OCRBlock], y_threshold: float = 15.0) -> List[OCRBlock]:
-    """
-    خوارزمية إعادة ترتيب النصوص الحكومية والأعمدة المزدوجة:
-    1. تجميع النصوص المتقاربة رأسياً في نفس السطر (Line Bucket).
-    2. فرز السطور من الأعلى للأسفل (Y).
-    3. فرز العناصر داخل السطر الواحد من اليسار لليمين (X).
-    """
+  
     if not blocks:
         return []
 
-    # حساب Y_center و X_min لكل صندوق
     items = []
     for b in blocks:
         y_coords = [pt[1] for pt in b.bbox]
@@ -45,15 +37,12 @@ def sort_reading_order_advanced(blocks: List[OCRBlock], y_threshold: float = 15.
             'y_center': y_center
         })
 
-    # فرز مبدئي حسب الارتفاع Y
     items.sort(key=lambda item: item['y_center'])
 
-    # تجميع العناصر في خطوط أفقيّة (Line Buckets)
     lines = []
     for item in items:
         matched_line = None
         for line in lines:
-            # حساب متوسط Y للسطر الحالي
             avg_y = sum(i['y_center'] for i in line) / len(line)
             if abs(item['y_center'] - avg_y) <= y_threshold:
                 matched_line = line
@@ -64,7 +53,6 @@ def sort_reading_order_advanced(blocks: List[OCRBlock], y_threshold: float = 15.
         else:
             lines.append([item])
 
-    # فرز السطور من الأعلى للأسفل، وفرز عناصر كل سطر من اليسار لليمين
     lines.sort(key=lambda line: sum(i['y_center'] for i in line) / len(line))
     
     sorted_blocks = []
@@ -80,7 +68,7 @@ def process_pipeline_ocr(image_path: str, doc_id: str = "doc_001", page_num: int
     if image is None:
         raise ValueError(f"تعذر قراءة الصورة من المسار: {image_path}")
 
-    # تشغيل PaddleOCR
+    
     results = ocr_engine.ocr(image_path, cls=False)
     
     raw_blocks = []
@@ -100,10 +88,8 @@ def process_pipeline_ocr(image_path: str, doc_id: str = "doc_001", page_num: int
             )
             total_confidence += conf
 
-    # تطبيق الترتيب الذكي لقواعد القراءة
     ordered_blocks = sort_reading_order_advanced(raw_blocks, y_threshold=15.0)
 
-    # حساب متوسط الثقة وتقييم الجودة
     block_count = len(ordered_blocks)
     avg_confidence = (total_confidence / block_count) if block_count > 0 else 0.0
     avg_confidence = round(avg_confidence, 4)

@@ -3,17 +3,13 @@ import os
 
 def generate_turkish_dictionary():
     dict_filename = "frequency_dictionary_tr.txt"
-    print("⏳ جاري تحميل معجم الكلمات التركية الأكثر شيوعاً...")
 
-    # رابط مباشر لمعجم معتمد للكلمات التركية مع الترددات الإحصائية
     url = "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/tr/tr_50k.txt"
     
     try:
         urllib.request.urlretrieve(url, dict_filename)
-        print(f"✅ تم تحميل وتجهيز ملف القاموس بنجاح باسم: '{dict_filename}'!")
     except Exception as e:
-        print(f"❌ حدث خطأ أثناء التحميل: {e}")
-        # خيار بديل: إنشاء قاموس محلي خفيف يحتوي على مفردات تركية أساسية
+        print(f"❌    : {e}")
         basic_tr_words = """
 bir 100000
 bu 90000
@@ -42,7 +38,7 @@ sağlık 8000
         """
         with open(dict_filename, "w", encoding="utf-8") as f:
             f.write(basic_tr_words.strip())
-        print(f"✅ تم إنشاء قاموس محلي أساسي بديل: '{dict_filename}'")
+        print(f"✅      : '{dict_filename}'")
 
 if __name__ == "__main__":
     generate_turkish_dictionary()

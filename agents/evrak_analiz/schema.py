@@ -1,28 +1,22 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional, Literal
 
-# ----------------------------------------------------
-# 1. المخططات الفرعية لمخرجات التحليل الدلالي (Evrak Analysis)
-# ----------------------------------------------------
 class DocumentTypeResult(BaseModel):
-    label: str = Field(description="تصنيف نوع الوثيقة مثل: dilekce, resmi_yazi, basvuru_belgesi, tutanak")
-    confidence: float = Field(ge=0.0, le=1.0, description="نسبة الثقة بالتصنيف")
+    label: str = Field(description=" dilekce, resmi_yazi, basvuru_belgesi, tutanak")
+    confidence: float = Field(ge=0.0, le=1.0, description="%=?  ")
 
 class EvrakAnalysisResult(BaseModel):
     document_type: DocumentTypeResult
-    topic: str = Field(description="الموضوع العام للوثيقة بالتركية")
-    purpose: str = Field(description="الهدف الرئيسي من إرسال أو إنشاء الوثيقة")
-    intent: str = Field(description="النية الإدارية المحددة مثل: izin_talebi, sikayet, itiraz_etme")
-    summary: str = Field(description="تلخيص موجز ودقيق لمحتوى الوثيقة من 1 إلى 3 جمل")
-    entities: Dict[str, Any] = Field(default_factory=dict, description="الكيانات المستخرجة مثل الأسماء، الأرقام القومية، التواريخ، المؤسسات")
-    key_information: Dict[str, Any] = Field(default_factory=dict, description="المعلومات الأساسية المستخلصة من صلب الوثيقة")
-    important_points: List[str] = Field(default_factory=list, description="النقاط الهامة والشروط المذكورة")
-    missing_information: List[str] = Field(default_factory=list, description="المعلومات أو المرفقات الناقصة المطلوبة في هذا النوع من المعاملات")
-    analysis_confidence: float = Field(ge=0.0, le=1.0, description="نسبة ثقة التحليل الدلالي العام")
+    topic: str = Field(description="   ")
+    purpose: str = Field(description="      ")
+    intent: str = Field(description="")
+    summary: str = Field(description="")
+    entities: Dict[str, Any] = Field(default_factory=dict, description="")
+    key_information: Dict[str, Any] = Field(default_factory=dict, description="")
+    important_points: List[str] = Field(default_factory=list, description="")
+    missing_information: List[str] = Field(default_factory=list, description="")
+    analysis_confidence: float = Field(ge=0.0, le=1.0, description="")
 
-# ----------------------------------------------------
-# 2. المخطط الشامل للبيانات وفق الـ Output المطلوب
-# ----------------------------------------------------
 class DocumentInfo(BaseModel):
     document_id: str
     file_name: str
