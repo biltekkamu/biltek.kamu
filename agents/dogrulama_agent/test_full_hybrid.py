@@ -3,16 +3,13 @@ from langchain_ollama import ChatOllama
 from validator_service import DocumentValidationService
 
 def run_hard_case_test():
-    # 1. تفعيل الموديل عبر Ollama (يمكنك استخدام qwen2.5:7b أو أي موديل متاح لديك)
     llm = ChatOllama(
         model="qwen2.5:7b",
         temperature=0.0
     )
 
-    # 2. تجهيز خدمة الفحص مع تمرير الـ LLM ليعمل الـ Semantic Validator
     service = DocumentValidationService(llm_client=llm)
 
-    # 3. بيانات الحالة الصعبة (hard_001)
     payload = {
         "success": True,
         "document_info": {
@@ -70,15 +67,12 @@ def run_hard_case_test():
         }
     }
 
-    print("🚀 جاري فحص الحالة عبر القواعد الصارمة + فحص الاتساق الدلالي (Semantic Consistency Check)...\n")
 
-    # 4. تنفيذ عملية الفحص
     validation_result = service.validate_document(payload)
 
-    # 5. تحديث الحقل وطباعة كتلة التحقق والـ JSON النهائي
     payload["validation"] = validation_result.model_dump()
 
-    print("=================== نتيجة كتلة الـ VALIDATION ===================")
+    print("=================== VALIDATION ===================")
     print(json.dumps(payload["validation"], indent=2, ensure_ascii=False))
 
 

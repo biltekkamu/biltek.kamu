@@ -37,7 +37,7 @@ def test_full_routing_conflict():
             "analysis_confidence": 0.90
         },
         "routing": {
-            "selected_department": "Bilgi İşlem Dairesi",  # توجيه متناقض صراحة مع موضوع المنحة
+            "selected_department": "Bilgi İşlem Dairesi",
             "reason": "Sistem üzerinden yönlendirme yapıldı.",
             "confidence": 0.70
         },

@@ -18,14 +18,14 @@ def test_full_missing_fields():
             "language": "tr"
         },
         "ocr": {
-            "text": "",  # OCR فارغ
+            "text": "",
             "pages": [],
             "parsed_metadata": {},
             "tables": [],
             "vision": {}
         },
         "evrak_analysis": {
-            "document_type": None,  # نوع الوثيقة مفقود
+            "document_type": None,
             "topic": "Bilinmiyor",
             "purpose": "",
             "intent": "",

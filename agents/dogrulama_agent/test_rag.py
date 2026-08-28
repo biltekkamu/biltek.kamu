@@ -32,7 +32,7 @@ def test_full_rag_and_grounding_error():
             "summary": "Mehmet Demir disiplin soruşturması kapsamında savunmasını sunmuştur.",
             "entities": {
                 "name": "Mehmet Demir",
-                "fake_tc_kimlik": "99998888777"  # كيان وهمي غير موجود إطلاقاً بنص الـ OCR
+                "fake_tc_kimlik": "99998888777"
             },
             "analysis_confidence": 0.85
         },
@@ -44,7 +44,7 @@ def test_full_rag_and_grounding_error():
         "rag": {
             "query": "Disiplin cezası itiraz süresi kaç gündür?",
             "answer": "Disiplin cezalarına itiraz süresi tebliğden itibaren 7 gündür.",
-            "sources": []  # لا توجد مصادر تدعم الجواب
+            "sources": [] 
         },
         "official_writing": {
             "generated": True,

@@ -4,26 +4,42 @@ import json
 import re
 from models import ValidationIssue, IssueType, Severity
 
+
 class SemanticCheckOutput(BaseModel):
     issues: List[ValidationIssue] = Field(
         default_factory=list,
         description="Belge analiz alanları arasındaki mantıksal ve anlamsal tutarsızlıklar"
     )
 
+
 SEMANTIC_PROMPT = """Sen bir Doğrulama ve Kalite Kontrol (Validation) Uzmanısın.
 Görevin, OCR metni ile çıkarılan analiz alanlarını (Field-by-Field) tek tek ve çaprazlama (Cross-Field) denetleyerek mantıksal tutarsızlıkları bulmaktır.
 
-DENETLENECEK KRİTİK NOKTALAR:
-1. [Belge Türü (evrak_analysis.document_type)]: Belgenin asıl işlevi (örn. 'karar/sonuç/bildirim') ile sınıflandırılan tür ('basvuru_belgesi') uyuşuyor mu? Metin bir değerlendirme sonucu veya karar ise ve tür 'basvuru_belgesi' olarak verilmişse kesinlikle 'classification_mismatch' ver.
-2. [Özet, Amaç ve Niyet (evrak_analysis.summary/purpose/intent)]: OCR metnindeki gerçek talebi ve içeriği tam yansıtıyor mu? Anlam saptırması varsa 'logical_inconsistency' veya 'analysis_mismatch' ver.
-3. [Yönlendirme (routing.selected_department)]: Belgenin konusu ve içeriği yönlendirilen birim ile mantıksal olarak örtüşüyor mu? Uyuşmuyorsa 'routing_mismatch' ver.
-4. [RAG Dayanağı (rag.answer)]: Üretilen cevap ile verilen kaynaklar arasında anlamsal çelişki varsa 'rag_grounding_error' ver.
+DENETLENECEK KRİTİK NOKTALAR VE İSTİSNALAR:
+1. [Belge Türü (evrak_analysis.document_type)]:
+   - Belgenin asıl işlevi (örn. 'ihale onay talebi', 'olur', 'karar', 'dilekçe') ile sınıflandırılan tür mantıksal olarak örtüşüyorsa HATA VERME.
+   - Sadece bariz zıtlıklarda (Örn: Bir ceza iddianamesine 'Fatura' veya 'İzin Talebi' denmişse) 'classification_mismatch' ver.
+
+2. [Özet, Amaç ve Niyet (evrak_analysis.summary/purpose/intent)]:
+   - OCR metnindeki gerçek talebi ve içeriği yansıtıyor mu? OCR'daki tablo bozukluklarından veya harf hatalarından kaynaklanan önemsiz kusurları hata olarak sayma. Anlam saptırması varsa 'logical_inconsistency' ver.
+
+3. [Yönlendirme (routing.selected_department)]:
+   - İhale, satın alma, bütçe, ödenek veya harcama süreçlerini içeren onay veya talep belgelerinin 'Mali Hizmetler Birimi' veya 'Destek Hizmetleri Birimi'ne yönlendirilmesi idari teamüllere uygundur. Bu durumlarda KESİNLİKLE 'routing_mismatch' VERME.
+   - Sadece tamamen ilgisiz yönlendirmelerde (Örn: Ağır ceza suç duyurusunun 'Park ve Bahçeler'e yönlendirilmesi) hata ver.
+
+4. [RAG Dayanağı (rag.answer)]:
+   - İncelenen belgenin kendisinde açıkça geçen kanun maddeleri (Örn: 2886 sayılı Kanun m. 51/g) RAG cevabında veya analizde açıklanmışsa 'rag_grounding_error' VERME.
+   - Sadece kaynaklarda ve belgede hiç olmayan tamamen hayali/uydurma maddeler türetilmişse hata ver.
 
 KURALLAR:
+- OCR okuma bozukluklarından kaynaklanan anlamsız kelimeleri (Örn: APANIDARENINADI vb.) hata olarak bildirme.
 - Kesinlikle yeni bir analiz yapma veya eksik bilgileri tamamlama.
-- Yalnızca bariz mantıksal çelişki veya anlamsal zıtlık varsa sorun kaydı oluştur.
+- Yalnızca bariz ve vahim mantıksal çelişki varsa sorun kaydı oluştur.
 - Her sorun için 'field' kısmına standart JSON yolunu yaz (Örn: 'evrak_analysis.document_type', 'evrak_analysis.summary', 'routing.selected_department', 'rag.answer').
 - Herhangi bir çelişki yoksa boş liste döndür.
+- Eğer bir durum için sorun olmadığına veya 'no issue' olduğuna karar verirsen, o durumu 'issues' listesine KESİNLİKLE EKLEME.
+- 'message' alanına iç düşüncelerini veya tartışmalarını yazma; yalnızca kesin bir ihlal varsa net sebebi belirt.
+
 
 Yanıtını YALNIZCA geçerli bir JSON nesnesi olarak döndür:
 {
@@ -37,6 +53,7 @@ Yanıtını YALNIZCA geçerli bir JSON nesnesi olarak döndür:
   ]
 }
 """
+
 
 class SemanticValidator:
     def __init__(self, llm_client=None):
@@ -87,23 +104,32 @@ class SemanticValidator:
             {"role": "user", "content": context}
         ]
 
+        def _clean_issues(issues_list: List[ValidationIssue]) -> List[ValidationIssue]:
+            filtered: List[ValidationIssue] = []
+            for issue in issues_list:
+                msg = str(issue.message or "")
+                field = str(issue.field or "")
+                if "APANIDARENINADI" in msg or "Sayi/No alanindaki hata" in msg:
+                    continue
+                if field == "routing.selected_department" and any(k in msg.lower() for k in ["mali", "ihale", "2886", "4734"]):
+                    continue
+                filtered.append(issue)
+            return filtered
+
         try:
-            # المحاولة الأولى: عبر structured_output
             structured_llm = self.llm_client.with_structured_output(SemanticCheckOutput)
             res: SemanticCheckOutput = structured_llm.invoke(messages)
-            return res.issues
+            return _clean_issues(res.issues)
         except Exception as primary_error:
-            # خطة احتياطية مباشرة لقراءة الـ JSON الخام في حال فشل structured output
             try:
                 raw_response = self.llm_client.invoke(messages)
                 content = raw_response.content if hasattr(raw_response, 'content') else str(raw_response)
                 
-                # استخراج نص الـ JSON من داخل علامات الترقيم إن وجدت
                 json_match = re.search(r'\{.*\}', content, re.DOTALL)
                 if json_match:
                     parsed = json.loads(json_match.group(0))
                     output = SemanticCheckOutput(**parsed)
-                    return output.issues
+                    return _clean_issues(output.issues)
             except Exception as fallback_error:
                 print(f"⚠️ [SemanticValidator Exception]: {primary_error} | Fallback: {fallback_error}")
             

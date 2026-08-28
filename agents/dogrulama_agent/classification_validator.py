@@ -2,7 +2,6 @@ from typing import List, Dict, Any
 from models import ValidationIssue, IssueType, Severity
 
 class ClassificationValidator:
-    # مؤشرات عامة قابلة للتوسع لأي صنف
     INDICATORS_MAP = {
         "fatura": ["fatura", "kdv", "vergi", "toplam", "tutar", "fatura no", "ödeme"],
         "dilekce": ["arz ederim", "talep", "bilgilerinize", "saygılarımla", "dilekçe", "gereğini"],
@@ -23,7 +22,6 @@ class ClassificationValidator:
         label = str(doc_type.get("label", "")).lower()
         conf = doc_type.get("confidence", 1.0)
 
-        # 1. فحص الثقة المنخفضة
         if isinstance(conf, (int, float)) and conf < 0.60:
             issues.append(
                 ValidationIssue(
@@ -34,7 +32,6 @@ class ClassificationValidator:
                 )
             )
 
-        # 2. فحص المؤشرات اللفظية إن وجدت
         if label in cls.INDICATORS_MAP and ocr_text:
             clean_text = ocr_text.lower()
             indicators = cls.INDICATORS_MAP[label]
