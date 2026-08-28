@@ -1,39 +1,64 @@
+import os
+import sys
+from pathlib import Path
+
+# =====================================================
+# WINDOWS DLL & PYTORCH FIX (MUST BE AT THE VERY TOP)
+# =====================================================
+torch_lib_path = Path(sys.prefix) / "Lib" / "site-packages" / "torch" / "lib"
+if torch_lib_path.exists():
+    try:
+        os.add_dll_directory(str(torch_lib_path))
+        os.environ["PATH"] = str(torch_lib_path) + ";" + os.environ.get("PATH", "")
+    except Exception:
+        pass
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import json
 import re
-from pathlib import Path
 import numpy as np
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+CURRENT_DIR = Path(__file__).resolve().parent
 
 
 class HybridDocumentClassifier:
 
     def __init__(
         self,
-        model_dir: str = "./berturk_classifier_v1",
-        eval_dir: str = "evaluation",
+        model_dir: str | None = None,
+        eval_dir: str | None = None,
     ):
+        self.model_path = Path(model_dir) if model_dir else (CURRENT_DIR / "berturk_classifier_v1")
+        self.eval_path = Path(eval_dir) if eval_dir else (CURRENT_DIR / "evaluation")
+
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
         self.model = (
             AutoModelForSequenceClassification.from_pretrained(
-                model_dir
+                str(self.model_path)
             ).to(self.device)
         )
         self.model.eval()
 
+        label2id_file = self.eval_path / "label2id.json"
+        if not label2id_file.exists():
+            label2id_file = self.model_path / "label2id.json"
+
         with open(
-            Path(eval_dir) / "label2id.json",
+            label2id_file,
             "r",
             encoding="utf-8",
         ) as f:
             self.label2id = json.load(f)
-        self.id2label = {v: k for k, v in self.label2id.items()}
+        self.id2label = {int(v) if str(v).isdigit() else v: k for k, v in self.label2id.items()}
+        self.id2label.update({int(k): v for k, v in self.id2label.items() if str(k).isdigit()})
 
-        # قواعد دقيقة للعناوين الرئيسية والكلمات الدلالية المحددة فقط
         self.rules_patterns = {
             "tutanak": [
                 r"\bTUTANAK\b",
@@ -138,14 +163,12 @@ class HybridDocumentClassifier:
         text_upper = text.upper()
         matched_rules = []
 
-        # استخراج المطابقات من النص
         for label, patterns in self.rules_patterns.items():
             for p in patterns:
                 if re.search(p, text_upper):
                     matched_rules.append(label)
                     break
 
-        # 1. إذا كان الموديل واثقاً جداً (ثقة >= 75%) -> اعتمد قراره دائماً
         if bert_confidence >= 0.75:
             return {
                 "final_label": bert_label,
@@ -156,7 +179,6 @@ class HybridDocumentClassifier:
                 "top_probabilities": all_probs,
             }
 
-        # 2. إذا كانت ثقة الموديل متوسطة وهناك تأكيد مطابق من القواعد
         if bert_label in matched_rules:
             boosted_conf = min(0.95, bert_confidence + 0.15)
             return {
@@ -168,10 +190,9 @@ class HybridDocumentClassifier:
                 "top_probabilities": all_probs,
             }
 
-        # 3. التدخل بالقواعد فقط عند انخفاض ثقة الموديل تماماً (< 50%) ووجود قاعدة صريحة لمرشح قوي
         if bert_confidence < 0.50 and len(matched_rules) == 1:
             rule_candidate = matched_rules[0]
-            # يجب أن يكون الموديل قد وضع احتمالاً معتبراً لنفس الفئة
+           
             if all_probs.get(rule_candidate, 0.0) >= 0.20:
                 return {
                     "final_label": rule_candidate,
@@ -185,7 +206,6 @@ class HybridDocumentClassifier:
                     "top_probabilities": all_probs,
                 }
 
-        # 4. الحالة الافتراضية: الاعتماد على نموذج BERTurk
         return {
             "final_label": bert_label,
             "bert_raw_label": bert_label,
@@ -196,8 +216,15 @@ class HybridDocumentClassifier:
         }
 
     def predict(self, text: str) -> dict:
-        if not text.strip():
-            return {"error": "النص فارغ"}
+        if not text or not text.strip():
+            return {
+                "final_label": "unknown",
+                "bert_raw_label": None,
+                "confidence": 0.0,
+                "decision_reason": "Metin boş olduğu için sınıflandırma yapılamadı.",
+                "matched_rules": [],
+                "top_probabilities": {},
+            }
 
         inputs = self._tokenize(text)
         with torch.no_grad():
@@ -208,13 +235,13 @@ class HybridDocumentClassifier:
                 .numpy()
             )
 
-        pred_idx = np.argmax(probs)
-        bert_label = self.id2label[pred_idx]
+        pred_idx = int(np.argmax(probs))
+        bert_label = self.id2label.get(pred_idx, str(pred_idx))
         confidence = float(probs[pred_idx])
 
         top_3_indices = np.argsort(probs)[-3:][::-1]
         top_probs = {
-            self.id2label[idx]: round(float(probs[idx]), 4)
+            self.id2label.get(int(idx), str(idx)): round(float(probs[idx]), 4)
             for idx in top_3_indices
         }
 
