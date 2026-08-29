@@ -1,0 +1,28 @@
+[
+  {
+    "source": "Vat8-FormSecmeHakkiIleTurkVatKaz.txt",
+    "law_name": "Vat8-FormSecmeHakkiIleTurkVatKaz",
+    "law_number": "",
+    "madde": "GENEL",
+    "article_type": "Preamble",
+    "chunk_id": 0,
+    "part": 1,
+    "total_parts": 2,
+    "start_char": 0,
+    "end_char": 1000,
+    "text": "T.C. \nİÇİŞLERİ BAKANLIĞI \nNüfus ve Vatandaşlık İşleri Genel Müdürlüğü \nSEÇME HAKKI İLE \nTÜRK VATANDAŞLIĞININ KAZANILMASI \nBAŞVURU FORMU \nForm No \nVat-8 \n \n \n \nSEÇME HAKKI İLE TÜRK VATANDAŞLIĞINI KAZANMAK İSTEYEN KİŞİYE AİT BİLGİLER \n \nT.C. Kimlik No \n \nUyruğu \n \n \n \n \n \n \n \n \n \n \nVarsa Yabancı Adı \n \nVarsa Yabancı Soyadı \n \n \n \n \n \n \n \nTürkçe Adı \n \nTürkçe Soyadı \n \n \n \n \n \n \n \n \nAnne Adı \n \nBaba Adı \n \n \n \n \n \n \n \nDoğum Yeri \nDoğduğu Yer Adı \nÜlke Adı \n \n \n \n \n \n \n \n \n \n \nDoğum Tarihi \n \nCinsiyeti \n \nDini \n \nGün \nAy \nYıl \nErkek \nKadın \n \n \n \n \n \n \n \n \n \n \n \n \n \n \nİLETİŞİM BİLGİLERİ \nTelefon \n(0 ) \nE-posta \n @ \nYerleşim Yeri Adresi \n \nEğitim Durumu \n \nMesleği \n \n \nMEDENİ HAL BİLGİLERİ \nBekar \nEvli \nBoşanmış \nDul \nNot: a) Medeni Hali Evli ise Evlenme Tarihi ve Eşe Ait Kimlik Bilgileri, \nb) \nMedeni Hali Boşanmış ise Evlenme Tarihi, Boşanma Tarihi ve Eşe Ait Kimlik Bilgileri, \nc) \nMedeni Hali Dul ise Evlenme Tarihi, Vefat Eden Eşin Ölüm Tarihi ve Eşe Ait Kimlik Bilgileri doldurulmalıdır."
+  },
+  {
+    "source": "Vat8-FormSecmeHakkiIleTurkVatKaz.txt",
+    "law_name": "Vat8-FormSecmeHakkiIleTurkVatKaz",
+    "law_number": "",
+    "madde": "GENEL",
+    "article_type": "Preamble",
+    "chunk_id": 1,
+    "part": 2,
+    "total_parts": 2,
+    "start_char": 850,
+    "end_char": 1868,
+    "text": "Tarihi ve Eşe Ait Kimlik Bilgileri, \nc) \nMedeni Hali Dul ise Evlenme Tarihi, Vefat Eden Eşin Ölüm Tarihi ve Eşe Ait Kimlik Bilgileri doldurulmalıdır. \n \nEvlenme Tarihi \n \nBoşanma Tarihi \n \nVefat Eden Eşin Ölüm Tarihi \n \nGün \nAy \nYıl \nGün \nAy \nYıl \nGün \nAy \nYıl \n \n \n \n \n \n \n \n \n \n \nEŞE AİT BİLGİLER \nKimlik No \n \nUyruğu \n \nAdı \n \nSoyadı \n \nAnne Adı \n \nBaba adı \n \nDoğum Yeri \n \nDoğum Tarihi \n / / \n \nKENDİSİ İLE BİRLİKTE TÜRK VATANDAŞLIĞINI KAZANMASINI İSTEDİĞİ ERGİN OLMAYAN ÇOCUKLARINA AİT BİLGİLER \n \n1 \n2 \n3 \nVarsa Yabancı Kimlik No \n(99… ile başlayan) \n \n \n \nUyruğu \n \n \n \nYabancı Adı \n \n \n \nYabancı Soyadı \n \n \n \nTürkçe Adı \n \n \n \nAlacağı Soyadı \n \n \n \nAnne Adı \n \n \n \nBaba Adı \n \n \n \nDoğum Yeri \n \n \n \nDoğum Tarihi \n / / \n / / \n / / \nCinsiyeti \n \n \n \nDini \n \n \n \n \n5901 sayılı Türk Vatandaşlığı Kanununun 21’inci maddesine göre seçme hakkı ile Türk vatandaşlığını kazanmak istiyorum. \nYukarıdaki bilgilerin doğruluğunu beyan eder, gereğinin yapılmasını arz ederim. ….. / ….. / \nAd Soyad \nİmza \nBAŞKONSOLOSLUĞUNA"
+  }
+]
