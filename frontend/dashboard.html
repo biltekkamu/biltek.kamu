@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        BİLTEK KAMU | Sistem Paneli
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="dashboard.css"
+    >
+</head>
+
+
+<body>
+
+<div class="layout">
+
+
+    <!-- =========================================
+         SIDEBAR
+    ========================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="logo">
+                B
+            </div>
+
+            <div>
+                <h2>
+                    BİLTEK KAMU
+                </h2>
+
+                <span>
+                    Yönetim Paneli
+                </span>
+            </div>
+
+        </div>
+
+
+        <nav>
+
+            <a
+                href="#"
+                class="active"
+            >
+                Genel Bakış
+            </a>
+
+
+            <a href="#lastProcess">
+                Son İşlem
+            </a>
+
+
+            <a href="#history">
+                İşlem Geçmişi
+            </a>
+
+
+            <a href="index.html">
+                Kullanıcı Ekranı
+            </a>
+
+        </nav>
+
+    </aside>
+
+
+
+    <!-- =========================================
+         MAIN
+    ========================================== -->
+
+    <main class="main">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <div>
+
+                <h1>
+                    Sistem İzleme Paneli
+                </h1>
+
+                <p>
+                    Çok ajanlı belge işleme sisteminin
+                    gerçek zamanlı durumu
+                </p>
+
+            </div>
+
+
+            <div class="system-status">
+
+                <span class="status-dot"></span>
+
+                Sistem Aktif
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =========================================
+             SUMMARY
+        ========================================== -->
+
+        <section class="cards">
+
+
+            <div class="card">
+
+                <span>
+                    Toplam İşlem
+                </span>
+
+                <strong id="totalRequests">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="card">
+
+                <span>
+                    Başarılı
+                </span>
+
+                <strong id="successful">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="card">
+
+                <span>
+                    Geçersiz
+                </span>
+
+                <strong id="invalid">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="card">
+
+                <span>
+                    Ortalama Süre
+                </span>
+
+                <strong id="averageTime">
+                    0 sn
+                </strong>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =========================================
+             AGENT PIPELINE
+        ========================================== -->
+
+        <section class="panel">
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        Agent Pipeline
+                    </h2>
+
+                    <p>
+                        Son işlemin çok ajanlı sistem
+                        üzerindeki akışı
+                    </p>
+
+                </div>
+
+
+                <span
+                    id="pipelineStatus"
+                    class="badge neutral"
+                >
+                    Bekleniyor
+                </span>
+
+            </div>
+
+
+
+            <!-- EMPTY -->
+
+            <div
+                id="pipelineEmpty"
+                class="empty"
+            >
+                Pipeline bilgisi için
+                bir işlem gerçekleştirin.
+            </div>
+
+
+
+            <!-- PIPELINE -->
+
+            <div
+                id="agentPipeline"
+                class="agent-pipeline hidden"
+            >
+
+
+                <!-- =================================
+                     1. OCR
+                ================================== -->
+
+                <div class="agent-card">
+
+                    <div class="agent-number">
+                        1
+                    </div>
+
+
+                    <div class="agent-content">
+
+                        <div class="agent-top">
+
+                            <strong>
+                                OCR
+                            </strong>
+
+
+                            <span
+                                class="agent-state success-state"
+                            >
+                                Tamamlandı
+                            </span>
+
+                        </div>
+
+
+                        <p>
+                            Belge metni ve görsel
+                            verileri çıkarıldı
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="pipeline-line"></div>
+
+
+
+                <!-- =================================
+                     2. CLASSIFICATION
+                ================================== -->
+
+                <div class="agent-card">
+
+                    <div class="agent-number">
+                        2
+                    </div>
+
+
+                    <div class="agent-content">
+
+                        <div class="agent-top">
+
+                            <strong>
+                                Classification
+                            </strong>
+
+
+                            <span
+                                id="classificationAgentState"
+                                class="agent-state"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <p id="classificationAgentDetail">
+                            -
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="pipeline-line"></div>
+
+
+
+                <!-- =================================
+                     3. EVRAK ANALIZ
+                ================================== -->
+
+                <div class="agent-card">
+
+                    <div class="agent-number">
+                        3
+                    </div>
+
+
+                    <div class="agent-content">
+
+                        <div class="agent-top">
+
+                            <strong>
+                                Evrak Analiz
+                            </strong>
+
+
+                            <span
+                                id="analysisAgentState"
+                                class="agent-state"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <p id="analysisAgentDetail">
+                            -
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="pipeline-line"></div>
+
+
+
+                <!-- =================================
+                     4. MEVZUAT RAG
+                ================================== -->
+
+                <div
+                    class="agent-card clickable-agent"
+                    id="ragAgentCard"
+                >
+
+                    <div class="agent-number">
+                        4
+                    </div>
+
+
+                    <div class="agent-content">
+
+                        <div class="agent-top">
+
+                            <strong>
+                                Mevzuat RAG
+                            </strong>
+
+
+                            <span
+                                id="ragAgentState"
+                                class="agent-state"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <p id="ragAgentDetail">
+                            -
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="pipeline-line"></div>
+
+
+
+                <!-- =================================
+                     5. ROUTING
+                ================================== -->
+
+                <div class="agent-card">
+
+                    <div class="agent-number">
+                        5
+                    </div>
+
+
+                    <div class="agent-content">
+
+                        <div class="agent-top">
+
+                            <strong>
+                                Birim Yönlendirme
+                            </strong>
+
+
+                            <span
+                                id="routingAgentState"
+                                class="agent-state"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <p id="routingAgentDetail">
+                            -
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="pipeline-line"></div>
+
+
+
+                <!-- =================================
+                     6. VALIDATION
+                ================================== -->
+
+                <div
+                    class="agent-card clickable-agent"
+                    id="validationAgentCard"
+                >
+
+                    <div class="agent-number">
+                        6
+                    </div>
+
+
+                    <div class="agent-content">
+
+                        <div class="agent-top">
+
+                            <strong>
+                                Doğrulama
+                            </strong>
+
+
+                            <span
+                                id="validationAgentState"
+                                class="agent-state"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
+                        <p id="validationAgentDetail">
+                            -
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="pipeline-line"></div>
+
+
+
+                <!-- =================================
+                     7. RESMI YAZI
+                ================================== -->
+
+                <div
+                    class="agent-card on-demand-agent"
+                >
+
+                    <div class="agent-number">
+                        7
+                    </div>
+
+
+                    <div class="agent-content">
+
+                        <div class="agent-top">
+
+                            <strong>
+                                Resmi Yazı
+                            </strong>
+
+
+                            <span
+                                class="agent-state ondemand-state"
+                            >
+                                On-Demand
+                            </span>
+
+                        </div>
+
+
+                        <p>
+                            Kullanıcı talebiyle
+                            resmi yazı oluşturulur
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             LAST PROCESS
+        ========================================== -->
+
+        <section
+            class="panel"
+            id="lastProcess"
+        >
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        Son İşlem
+                    </h2>
+
+                    <p>
+                        Sistemde gerçekleştirilen
+                        son belge veya soru işlemi
+                    </p>
+
+                </div>
+
+
+                <span
+                    id="lastStatus"
+                    class="badge neutral"
+                >
+                    Bekleniyor
+                </span>
+
+            </div>
+
+
+
+            <!-- EMPTY -->
+
+            <div
+                id="emptyProcess"
+                class="empty"
+            >
+                Henüz bir işlem gerçekleştirilmedi.
+            </div>
+
+
+
+            <!-- PROCESS DETAILS -->
+
+            <div
+                id="processDetails"
+                class="process-grid hidden"
+            >
+
+
+                <div class="detail">
+
+                    <span>
+                        Dosya
+                    </span>
+
+                    <strong id="fileName">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div class="detail">
+
+                    <span>
+                        İşlem Türü
+                    </span>
+
+                    <strong id="requestType">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div class="detail">
+
+                    <span>
+                        Sınıflandırma
+                    </span>
+
+                    <strong id="classification">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div class="detail">
+
+                    <span>
+                        Sınıflandırma Güveni
+                    </span>
+
+                    <strong id="classificationConfidence">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div class="detail">
+
+                    <span>
+                        Analiz Güveni
+                    </span>
+
+                    <strong id="analysisConfidence">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div class="detail">
+
+                    <span>
+                        Yönlendirilen Birim
+                    </span>
+
+                    <strong id="routing">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div class="detail">
+
+                    <span>
+                        RAG Kaynakları
+                    </span>
+
+                    <strong id="ragSources">
+                        -
+                    </strong>
+
+                </div>
+
+
+
+                <div class="detail">
+
+                    <span>
+                        Doğrulama Sorunları
+                    </span>
+
+                    <strong id="issueCount">
+                        -
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             HISTORY
+        ========================================== -->
+
+        <section
+            class="panel"
+            id="history"
+        >
+
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        Son İşlemler
+                    </h2>
+
+                    <p>
+                        En son gerçekleştirilen sistem işlemleri
+                    </p>
+
+                </div>
+
+
+                <button
+                    onclick="loadDashboard()"
+                    class="refresh-button"
+                >
+                    Yenile
+                </button>
+
+            </div>
+
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Dosya
+                            </th>
+
+                            <th>
+                                Tür
+                            </th>
+
+                            <th>
+                                Sınıflandırma
+                            </th>
+
+                            <th>
+                                Birim
+                            </th>
+
+                            <th>
+                                Doğrulama
+                            </th>
+
+                            <th>
+                                Sorun
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+
+                    <tbody id="historyBody">
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="table-empty"
+                            >
+                                Henüz veri yok.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             VALIDATION DETAILS MODAL
+        ========================================== -->
+
+        <div
+            id="validationModal"
+            class="modal hidden"
+        >
+
+
+            <div class="modal-backdrop"></div>
+
+
+            <div class="modal-box">
+
+
+                <div class="modal-header">
+
+                    <div>
+
+                        <h2>
+                            Doğrulama Detayları
+                        </h2>
+
+                        <p>
+                            Son işlemde tespit edilen
+                            doğrulama sorunları
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        id="closeValidationModal"
+                        class="modal-close"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+
+                <div class="validation-summary">
+
+
+                    <div>
+
+                        <span>
+                            Durum
+                        </span>
+
+                        <strong id="modalValidationStatus">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            Toplam Sorun
+                        </span>
+
+                        <strong id="modalIssueCount">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div id="validationIssuesList">
+
+                    <div class="empty">
+                        Doğrulama sorunu bulunamadı.
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =========================================
+             RAG DETAILS MODAL
+        ========================================== -->
+
+        <div
+            id="ragModal"
+            class="modal hidden"
+        >
+
+
+            <div class="modal-backdrop"></div>
+
+
+            <div class="modal-box">
+
+
+                <div class="modal-header">
+
+                    <div>
+
+                        <h2>
+                            Mevzuat RAG Detayları
+                        </h2>
+
+                        <p>
+                            Son işlemde kullanılan
+                            sorgu, yanıt ve kaynaklar
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        id="closeRagModal"
+                        class="modal-close"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+
+                <!-- QUERY -->
+
+                <div class="rag-section">
+
+                    <span class="rag-label">
+                        Sorgu
+                    </span>
+
+
+                    <div
+                        id="ragQuery"
+                        class="rag-text"
+                    >
+                        -
+                    </div>
+
+                </div>
+
+
+
+                <!-- ANSWER -->
+
+                <div class="rag-section">
+
+                    <span class="rag-label">
+                        RAG Yanıtı
+                    </span>
+
+
+                    <div
+                        id="ragAnswer"
+                        class="rag-text"
+                    >
+                        -
+                    </div>
+
+                </div>
+
+
+
+                <!-- SOURCES -->
+
+                <div class="rag-section">
+
+
+                    <div class="rag-section-header">
+
+                        <span class="rag-label">
+                            Kaynaklar
+                        </span>
+
+
+                        <strong id="ragSourceCount">
+                            0
+                        </strong>
+
+                    </div>
+
+
+
+                    <div id="ragSourcesList">
+
+                        <div class="empty">
+                            Kaynak bulunamadı.
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =========================================
+             FOOTER
+        ========================================== -->
+
+        <footer>
+
+            BİLTEK KAMU ·
+            Multi-Agent Kamu Belge Yönetim Sistemi
+
+        </footer>
+
+
+    </main>
+
+</div>
+
+
+
+<script src="dashboard.js"></script>
+
+</body>
+
+</html>

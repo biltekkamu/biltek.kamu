@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+agents/mevzuat_rag/chroma_db/
+agents/classification_agent/berturk_classifier_v1/
+agents/classification_agent/.cache/
+
+.env
+.venv/

@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "document_info": {
+    "document_id": "mock_doc_02",
+    "file_name": "askerlik_tebligati.jpg",
+    "file_type": "jpg",
+    "page_count": 1,
+    "language": "tr"
+  },
+  "input": {
+    "clean_text": "T.C. MİLLÎ SAVUNMA BAKANLIĞI ASKERALMA GENEL MÜDÜRLÜĞÜ\n1. Askerlik çağına girmenize rağmen son yoklamanızı yaptırmamanız nedeniyle yoklama kaçağı durumunda bulunmaktasınız...\nBilgilerinize rica ederim.",
+    "metadata": {
+      "sayi": "1111",
+      "tarih": "04.02.2016",
+      "konu": "Askerlik Yoklama Bildirimi",
+      "recipient": "İlgili Şahıs"
+    },
+    "tables": [],
+    "vision": {
+      "has_signature": true,
+      "has_stamp": true
+    }
+  }
+}
