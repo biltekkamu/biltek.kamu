@@ -9,3 +9,7 @@ agents/classification_agent/.cache/
 
 .env
 .venv/
+
+.env
+.venv/
+node_modules/

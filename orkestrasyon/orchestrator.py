@@ -1,12 +1,48 @@
+import asyncio
 import os
 from pathlib import Path
 import re
 import sys
+import threading
 import time
 
 import torch
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+
+# =====================================================
+# LIGHTWEIGHT NON-BLOCKING TELEMETRY HOOK (SSE)
+# =====================================================
+
+_event_subscribers: set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]] = set()
+_event_lock = threading.Lock()
+
+
+def subscribe_events(loop: asyncio.AbstractEventLoop, queue: asyncio.Queue) -> None:
+    with _event_lock:
+        _event_subscribers.add((loop, queue))
+
+
+def unsubscribe_events(loop: asyncio.AbstractEventLoop, queue: asyncio.Queue) -> None:
+    with _event_lock:
+        _event_subscribers.discard((loop, queue))
+
+
+def emit_event(agent: str, status: str, task: str = "") -> None:
+    if not _event_subscribers:
+        return
+    payload = {
+        "agent": agent,
+        "status": status,
+        "task": task,
+    }
+    with _event_lock:
+        subscribers = list(_event_subscribers)
+    for loop, queue in subscribers:
+        try:
+            loop.call_soon_threadsafe(queue.put_nowait, payload)
+        except Exception:
+            pass
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BASE_DIR / ".env")
@@ -444,11 +480,15 @@ def process_input(
 
     if route == "question":
 
+        emit_event("orchestrator", "delegating", "Soru Mevzuat RAG ajanına yönlendiriliyor...")
+
         state.current_step = (
             "mevzuat_rag"
         )
 
         rag_start = time.perf_counter()
+
+        emit_event("mevzuat_rag", "working", "Mevzuat taranıyor ve hukuki yanıt üretiliyor...")
 
         rag_result = run_real_rag(
     question=text,
@@ -456,6 +496,9 @@ def process_input(
         mode=mode,
 
         )
+
+        emit_event("mevzuat_rag", "done", "Mevzuat yanıtı hazırlandı.")
+        emit_event("orchestrator", "done", "Soru yanıtlama süreci tamamlandı.")
 
         rag_time = (
             time.perf_counter()
@@ -513,9 +556,11 @@ def process_input(
     # 1. REAL OCR
     # =================================================
 
+    emit_event("orchestrator", "delegating", "Belge OCR ajanına iletiliyor...")
     state.current_step = "ocr"
 
     ocr_start = time.perf_counter()
+    emit_event("ocr", "working", "Belge metni ve görsel veriler çıkarılıyor...")
 
     ocr_result = (
         ocr_pipeline.process_file(
@@ -532,6 +577,7 @@ def process_input(
         time.perf_counter()
         - ocr_start
     )
+    emit_event("ocr", "done", f"OCR tamamlandı ({ocr_time:.1f} sn)")
 
     print(
         f"\n[TIMING] OCR: "
@@ -578,6 +624,7 @@ def process_input(
     # 2. REAL CLASSIFICATION
     # =================================================
 
+    emit_event("orchestrator", "delegating", "Belge Sınıflandırma ajanına yönlendiriliyor...")
     state.current_step = (
         "classification"
     )
@@ -585,6 +632,7 @@ def process_input(
     classification_start = (
         time.perf_counter()
     )
+    emit_event("classification_agent", "working", "Belge türü BERTurk ile sınıflandırılıyor...")
 
     if (
         state.raw_text
@@ -679,16 +727,19 @@ def process_input(
         f"[TIMING] Classification: "
         f"{classification_time:.2f} sec"
     )
+    emit_event("classification_agent", "done", f"Tür: {classification_result.get('label')}")
 
     # =================================================
     # 3. REAL EVRAK ANALIZ
     # =================================================
 
+    emit_event("orchestrator", "delegating", "Evrak Analiz ajanına yönlendiriliyor...")
     state.current_step = (
         "evrak_analiz"
     )
 
     evrak_start = time.perf_counter()
+    emit_event("evrak_analiz", "working", "Evrak konusu, amacı ve varlıkları analiz ediliyor...")
 
     page_count = (
         document_info.get(
@@ -792,6 +843,7 @@ def process_input(
         f"[TIMING] Evrak Analysis: "
         f"{evrak_time:.2f} sec"
     )
+    emit_event("evrak_analiz", "done", "Evrak analizi tamamlandı.")
 
     if hasattr(
         evrak_result,
@@ -837,11 +889,13 @@ def process_input(
     # 4. REAL MEVZUAT RAG
     # =================================================
 
+    emit_event("orchestrator", "delegating", "Mevzuat RAG ajanına yönlendiriliyor...")
     state.current_step = (
         "mevzuat_rag"
     )
 
     rag_start = time.perf_counter()
+    emit_event("mevzuat_rag", "working", "İlgili kanun ve maddeler taranıyor...")
 
     rag_question = (
         build_rag_question(
@@ -878,6 +932,7 @@ def process_input(
         f"[TIMING] RAG: "
         f"{rag_time:.2f} sec"
     )
+    emit_event("mevzuat_rag", "done", "Mevzuat analizi tamamlandı.")
 
     state.rag_result = (
         rag_result
@@ -887,6 +942,7 @@ def process_input(
     # 5. REAL BIRIM YONLENDIRME
     # =================================================
 
+    emit_event("orchestrator", "delegating", "Birim Yönlendirme ajanına iletiliyor...")
     state.current_step = (
         "birim_yonlendirme"
     )
@@ -894,6 +950,7 @@ def process_input(
     routing_start = (
         time.perf_counter()
     )
+    emit_event("birim_yonlendirme", "working", "Yetkili kamu birimi belirleniyor...")
 
     routing_result = route_unit(
 
@@ -934,6 +991,7 @@ def process_input(
     state.routing_result = (
         routing_result_dict
     )
+    emit_event("birim_yonlendirme", "done", f"Birim: {routing_result_dict.get('selected_department') or 'Belirlenemedi'}")
 
 
     # =================================================
@@ -1033,6 +1091,7 @@ def process_input(
     # 7. REAL DOGRULAMA
     # =================================================
 
+    emit_event("orchestrator", "delegating", "Doğrulama ajanına iletiliyor...")
     state.current_step = (
         "dogrulama"
     )
@@ -1040,6 +1099,7 @@ def process_input(
     validation_start = (
         time.perf_counter()
     )
+    emit_event("dogrulama_agent", "working", "Şema, kaynak ve anlamsal tutarlılık denetleniyor...")
 
     validation_result = (
         validation_service.validate_document(
@@ -1075,6 +1135,8 @@ def process_input(
     final_json["validation"] = (
         validation_result_dict
     )
+    emit_event("dogrulama_agent", "done", f"Doğrulama: {validation_result_dict.get('status')}")
+    emit_event("orchestrator", "done", "Belge analizi tamamlandı.")
 
     # =================================================
     # COMPLETE + TOTAL TIMING
@@ -1106,6 +1168,7 @@ def process_input(
         f"[TIMING] Evrak Analysis: "
         f"{evrak_time:.2f} sec"
     )
+    emit_event("evrak_analiz", "done", "Evrak analizi tamamlandı.")
 
     print(
         f"[TIMING] RAG: "

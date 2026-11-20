@@ -1,3 +1,5 @@
+import asyncio
+import json
 import os
 import torch
 import shutil
@@ -21,6 +23,7 @@ from fastapi import (
     FastAPI,
     File,
     Form,
+    Request,
     UploadFile,
     HTTPException,
 )
@@ -36,13 +39,19 @@ from fastapi.middleware.cors import (
 from fastapi.responses import (
     FileResponse,
     JSONResponse,
+    StreamingResponse,
 )
+
+from fastapi.staticfiles import StaticFiles
 
 from pydantic import BaseModel
 
 
 from orkestrasyon.orchestrator import (
+    emit_event,
     process_input,
+    subscribe_events,
+    unsubscribe_events,
 )
 
 from agents.resmi_yazi.agent import (
@@ -531,6 +540,9 @@ def create_official_writing(
 
     try:
 
+        emit_event("orchestrator", "delegating", "Resmi Yazı ajanına görev iletiliyor...")
+        emit_event("resmi_yazi", "working", "Resmi yazı taslağı oluşturuluyor...")
+
         result = (
             resmi_yazi_agent.generate(
 
@@ -559,6 +571,9 @@ def create_official_writing(
                 ),
             )
         )
+
+        emit_event("resmi_yazi", "done", "Resmi yazı taslağı hazırlandı.")
+        emit_event("orchestrator", "done", "Resmi yazı oluşturma tamamlandı.")
 
 
         if hasattr(
@@ -594,8 +609,50 @@ def create_official_writing(
 
 
 # =====================================================
+# REAL-TIME TELEMETRY SSE ENDPOINT
+# =====================================================
+
+@app.get("/events")
+async def stream_agent_events(request: Request):
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+    subscribe_events(loop, queue)
+
+    async def event_generator():
+        try:
+            yield ": connected\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"
+        finally:
+            unsubscribe_events(loop, queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# =====================================================
 # FRONTEND STATIC FILES (OPTIONAL DIRECT SERVING)
 # =====================================================
+
+if (FRONTEND_DIR / "office-3d").exists():
+    app.mount(
+        "/office-3d",
+        StaticFiles(directory=str(FRONTEND_DIR / "office-3d"), html=True),
+        name="office-3d",
+    )
 
 @app.get("/{asset_name}")
 def serve_frontend_asset(asset_name: str):

@@ -288,6 +288,8 @@ function deleteConversation(
 
 function loadConversation(id) {
 
+  closeOffice3dView();
+
   currentConversationId = id;
 
   const conversation =
@@ -349,6 +351,8 @@ function renderConversation(
 
 
 function newConversation() {
+
+  closeOffice3dView();
 
   currentConversationId = null;
 
@@ -3498,9 +3502,140 @@ function openDetails(
 
 
 /* ========================================
+   3D AGENT OFFICE TAB & SSE TELEMETRY
+======================================== */
+
+const office3dTabBtn =
+  document.getElementById("office3dTabBtn");
+
+const office3dView =
+  document.getElementById("office3dView");
+
+const office3dFrame =
+  document.getElementById("office-3d-frame");
+
+const chatStageEl =
+  document.querySelector(".chat-stage");
+
+const composerWrapEl =
+  document.querySelector(".composer-wrap");
+
+let isOffice3dOpen = false;
+
+
+function setOffice3dOpen(open) {
+
+  isOffice3dOpen = Boolean(open);
+
+  if (
+    !office3dView ||
+    !chatStageEl ||
+    !composerWrapEl
+  ) {
+    return;
+  }
+
+  chatStageEl.classList.toggle(
+    "hidden",
+    isOffice3dOpen
+  );
+
+  composerWrapEl.classList.toggle(
+    "hidden",
+    isOffice3dOpen
+  );
+
+  office3dView.classList.toggle(
+    "hidden",
+    !isOffice3dOpen
+  );
+
+  if (office3dTabBtn) {
+    office3dTabBtn.textContent =
+      isOffice3dOpen
+        ? "💬 Sohbete Dön"
+        : "🏢 3D Ajan Ofisi";
+  }
+}
+
+
+function closeOffice3dView() {
+
+  if (isOffice3dOpen) {
+    setOffice3dOpen(false);
+  }
+}
+
+
+if (office3dTabBtn) {
+
+  office3dTabBtn.onclick = () => {
+    setOffice3dOpen(!isOffice3dOpen);
+  };
+}
+
+
+function connectAgentTelemetryEvents(
+  baseUrl = API_BASE,
+  triedFallback = false
+) {
+
+  if (typeof EventSource === "undefined") {
+    return;
+  }
+
+  try {
+
+    const source = new EventSource(
+      `${baseUrl}/events`
+    );
+
+    source.onmessage = event => {
+
+      if (!event.data) {
+        return;
+      }
+
+      try {
+
+        const payload = JSON.parse(
+          event.data
+        );
+
+        office3dFrame?.contentWindow?.postMessage(
+          {
+            type: "BILTEK_AGENT_EVENT",
+            payload: payload
+          },
+          "*"
+        );
+      } catch {
+        // Ignore malformed event
+      }
+    };
+
+    source.onerror = () => {
+
+      if (!triedFallback) {
+        source.close();
+        connectAgentTelemetryEvents(
+          FALLBACK_API_BASE,
+          true
+        );
+      }
+    };
+  } catch {
+    // Ignore SSE init errors
+  }
+}
+
+
+/* ========================================
    INITIALIZE
 ======================================== */
 
 renderHistory();
 
 updateModeUI();
+
+connectAgentTelemetryEvents();
