@@ -1,0 +1,12 @@
+{
+  "label": "bildirim_tebligat",
+  "confidence": 0.8715,
+  "bert_raw_label": "bildirim_tebligat",
+  "decision_reason": "Model Confident: High BERT confidence retained",
+  "matched_rules": [],
+  "top_probabilities": {
+    "bildirim_tebligat": 0.8715,
+    "onay_belgesi": 0.0508,
+    "tutanak": 0.0227
+  }
+}

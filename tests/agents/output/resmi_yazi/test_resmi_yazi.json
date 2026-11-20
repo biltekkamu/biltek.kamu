@@ -1,0 +1,14 @@
+{
+  "official_writing": {
+    "generated": true,
+    "type": "bilgilendirme_yazisi",
+    "subject": "İfade İstemi ve İfade Verme Çağrısı",
+    "body": "İlgili makamlarca yürütülen soruşturma kapsamında, Irak uyruklu Moussa K. GATEA tarafından Afyonkarahisar Belediye Başkanı Burcu KÖKSAL'a yönelik \"ruhsat verilmediği\" ve \"söz tutulmadığı\" yönündeki iddiaların aydınlatılması amacıyla ifade alınması gerekmektedir. Bu doğrultuda, 5271 sayılı Ceza Muhakemesi Kanunu'nun 147. maddesi hükümleri uyarınca, söz konusu iddialara ilişkin yazılı ifadenizin 06/06/2024 tarihine kadar bu birime iletilmesi hususu; ifade vermeden önce avukattan hukuki yardım alabileceğiniz bilgisiyle birlikte tarafınıza bildirilir.",
+    "confidence": 0.93,
+    "validation": {
+      "status": "passed",
+      "issues": []
+    }
+  },
+  "timing": 1.77
+}

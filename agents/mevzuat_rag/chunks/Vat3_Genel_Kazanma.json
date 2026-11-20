@@ -1,0 +1,41 @@
+[
+  {
+    "source": "Vat3_Genel_Kazanma.txt",
+    "law_name": "Vat3 Genel Kazanma",
+    "law_number": "",
+    "madde": "GENEL",
+    "article_type": "Preamble",
+    "chunk_id": 0,
+    "part": 1,
+    "total_parts": 3,
+    "start_char": 0,
+    "end_char": 968,
+    "text": "T.C.\nİÇİŞLERİ BAKANLIĞI \nNüfus ve Vatandaşlık İşleri Genel Müdürlüğü \nGENEL OLARAK \nTÜRK VATANDAŞLIĞININ KAZANILMASI \nBAŞVURU FORMU \nForm No \nVat-3 \nKayıt Tarihi \n…./…./…… \nKayıt No \n…………………………….………………………………………………………………. \nTÜRK VATANDAŞLIĞINI GENEL OLARAK KAZANMAK İSTEYEN KİŞİYE AİT BİLGİLER \nMEDENİ HAL BİLGİLERİ \nNot: a) Medeni Hali Evli ise Evlenme Tarihi ve Eşe Ait Kimlik Bilgileri, \nb)\nMedeni Hali Boşanmış ise Evlenme Tarihi, Boşanma Tarihi ve Eşe Ait Kimlik Bilgileri, \nc)\nMedeni Hali Dul ise Evlenme Tarihi, Vefat Eden Eşin Ölüm Tarihi ve Eşe Ait Kimlik Bilgileri doldurulmalıdır.\nEvlenme Tarihi \nBoşanma Tarihi \nVefat Eden Eşin Ölüm Tarihi \nGün \nAy \nYıl \nGün \nAy \nYıl \nGün \nAy \nYıl \nEŞE AİT BİLGİLER \nKimlik No \nUyruğu \nAdı \nSoyadı \nAnne Adı \nBaba Adı \nDoğum Yeri \nDoğum Tarihi \n / / \nMesleği \nEğitim Durumu \nKENDİSİ İLE BİRLİKTE TÜRK VATANDAŞLIĞINI KAZANMASINI İSTEDİĞİ ERGİN OLMAYAN ÇOCUKLARINA AİT BİLGİLER \n1 \n2 \n3 \nYabancı Kimlik No \n(99… ile başlayan)"
+  },
+  {
+    "source": "Vat3_Genel_Kazanma.txt",
+    "law_name": "Vat3 Genel Kazanma",
+    "law_number": "",
+    "madde": "GENEL",
+    "article_type": "Preamble",
+    "chunk_id": 1,
+    "part": 2,
+    "total_parts": 3,
+    "start_char": 818,
+    "end_char": 1926,
+    "text": "KENDİSİ İLE BİRLİKTE TÜRK VATANDAŞLIĞINI KAZANMASINI İSTEDİĞİ ERGİN OLMAYAN ÇOCUKLARINA AİT BİLGİLER \n1 \n2 \n3 \nYabancı Kimlik No \n(99… ile başlayan) \nUyruğu \nYabancı Adı \nYabancı Soyadı \nTürkçe Adı \nAlacağı Soyadı \nAnne Adı \nBaba Adı \nDoğum Yeri \nDoğum Tarihi \n / / \n / / \n / / \nCinsiyeti \nDini \n5901 sayılı Türk Vatandaşlığı Kanununun 11’inci maddesi uyarınca Türk vatandaşlığını genel hükümlere göre kazanmak istiyorum. \nYukarıdaki bilgilerin doğruluğunu beyan eder, bilgilerin hatalı olması durumunda doğacak yükümlülüğü kabul eder, \nGereğinin yapılmasını arz ederim. ….. / ….. / …… \nAd Soyad \nİmza \nYabancı Kimlik No(99… ile başlayan) \nUyruğu \nBiyometrik \nFotoğraf \n(Forma sisteme taranmak \nüzere iliştirilecektir) \nYabancı Adı \nYabancı Soyadı \nTürkçe Adı \nTürkçe Soyadı \nAnne Adı \nBaba Adı \nDoğum Yeri \nDoğduğu Yer Adı \nÜlke Adı \nSoyu \nDoğum Tarihi \nCinsiyeti \nEvlilik Soyadı ile birlikte Bekârlık Soyadı kullanılacak mı? \nGün \nAy \nYıl \nErkek \nKadın \nDaha önce herhangi bir suçtan mahkûm oldunuz mu? (Evet-Hayır) \nDevam eden yargılamanız var mı? (Evet-Hayır) \nİLETİŞİM VE DİĞER BİLGİLER \nTelefon \n(0 )"
+  },
+  {
+    "source": "Vat3_Genel_Kazanma.txt",
+    "law_name": "Vat3 Genel Kazanma",
+    "law_number": "",
+    "madde": "GENEL",
+    "article_type": "Preamble",
+    "chunk_id": 2,
+    "part": 3,
+    "total_parts": 3,
+    "start_char": 1776,
+    "end_char": 2025,
+    "text": "aha önce herhangi bir suçtan mahkûm oldunuz mu? (Evet-Hayır) \nDevam eden yargılamanız var mı? (Evet-Hayır) \nİLETİŞİM VE DİĞER BİLGİLER \nTelefon \n(0 ) \nE-posta\n @ \nYerleşim Yeri Adresi \nEğitim Durumu \nMesleği \nDini \nVALİLİĞİNE\nBekar\nEvli\nBoşanmış\nDul"
+  }
+]

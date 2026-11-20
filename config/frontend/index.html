@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BİLTEK Kamu</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img src="biltek-logo.jpg" alt="BİLTEK" class="brand-logo" />
+
+        <div>
+          <div class="brand-name">BİLTEK KAMU</div>
+          <div class="brand-sub">
+            Yapay zekâ destekli kamu asistanı
+          </div>
+        </div>
+      </div>
+
+      <button class="new-chat" id="newChatBtn">
+        ＋ Yeni Sohbet
+      </button>
+
+      <div class="history-head">
+        <span>Geçmiş</span>
+
+        <button class="ghost small" id="clearHistoryBtn">
+          Temizle
+        </button>
+      </div>
+
+      <div class="history-list" id="historyList"></div>
+
+      <div class="sidebar-footer">
+        <div class="privacy-dot"></div>
+        Sohbet geçmişi bu cihazda tutulur
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <header class="topbar">
+
+        <button class="mobile-menu" id="mobileMenuBtn">
+          ☰
+        </button>
+
+        <div
+          class="mode-switch"
+          role="tablist"
+          aria-label="Yanıt modu"
+        >
+
+          <button
+            class="mode-btn active"
+            data-mode="citizen"
+          >
+            <span>👤</span>
+            Vatandaş Modu
+          </button>
+
+          <button
+            class="mode-btn"
+            data-mode="expert"
+          >
+            <span>⚖️</span>
+            Uzman / Hukukçu Modu
+          </button>
+
+        </div>
+
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          Sistem hazır
+        </div>
+
+      </header>
+
+      <section class="chat-stage">
+
+        <div class="welcome" id="welcome">
+
+          <div class="welcome-mark">
+            BT
+          </div>
+
+          <h1>
+            Size nasıl yardımcı olabilirim?
+          </h1>
+
+          <p>
+            Mevzuat hakkında soru sorun veya bir belge yükleyin.
+            Yanıt seviyesini yukarıdaki moddan değiştirebilirsiniz.
+          </p>
+
+          <div class="quick-actions">
+
+            <button
+              class="quick"
+              data-prompt="Bu belgenin amacı nedir?"
+            >
+              Belgenin amacını açıkla
+            </button>
+
+            <button
+              class="quick"
+              data-prompt="Bu konuyla ilgili mevzuatı açıklar mısın?"
+            >
+              İlgili mevzuatı bul
+            </button>
+
+            <button
+              class="quick"
+              data-prompt="Bu belge için hangi birim yetkilidir?"
+            >
+              İlgili birimi belirle
+            </button>
+
+          </div>
+
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+      </section>
+
+      <div class="composer-wrap">
+
+        <div
+          class="attachment-preview hidden"
+          id="attachmentPreview"
+        >
+
+          <div class="file-icon">
+            DOC
+          </div>
+
+          <div class="file-meta">
+            <strong id="fileName"></strong>
+            <span id="fileSize"></span>
+          </div>
+
+          <button
+            class="remove-file"
+            id="removeFileBtn"
+          >
+            ×
+          </button>
+
+        </div>
+
+        <div class="composer">
+
+          <label
+            class="attach-btn"
+            title="Belge yükle"
+          >
+
+            <input
+              id="fileInput"
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              hidden
+            />
+
+            📎
+
+          </label>
+
+          <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="Mesajınızı yazın veya bir belge yükleyin..."
+          ></textarea>
+
+          <button
+            class="action-btn mic-btn"
+            id="micBtn"
+            type="button"
+            title="Sesli Soru Sor (Mikrofon)"
+            style="display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 1.25rem; cursor: pointer; padding: 15 8px; transition: transform 0.2s;"
+          >
+            🎙️
+          </button>
+ 
+          <button
+            class="send-btn"
+            id="sendBtn"
+            title="Gönder"
+          >
+            ➜
+          </button>
+
+        </div>
+
+        <div class="composer-note">
+          BİLTEK hukuki bilgilendirme sunar;
+          kritik işlemler için resmi kaynakları kontrol edin.
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <div
+    class="modal-backdrop hidden"
+    id="modalBackdrop"
+  >
+
+    <section class="modal">
+
+      <div class="modal-head">
+
+        <div>
+
+          <div
+            class="eyebrow"
+            id="modalEyebrow"
+          >
+            KAYNAKLAR
+          </div>
+
+          <h2 id="modalTitle">
+            Kullanılan Kaynaklar
+          </h2>
+
+        </div>
+
+        <button
+          class="modal-close"
+          id="modalCloseBtn"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <div
+        class="modal-body"
+        id="modalBody"
+      ></div>
+
+    </section>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "routing_with_rag": {
+    "selected_department": "Bilgi İşlem Birimi",
+    "reason": "Belge bilgi işlem veya teknik sistemlerle ilgilidir.",
+    "confidence": 0.9
+  },
+  "routing_without_rag": {
+    "selected_department": "Bilgi İşlem Birimi",
+    "reason": "Belge bilgi işlem veya teknik sistemlerle ilgilidir.",
+    "confidence": 0.9
+  },
+  "matched_keywords": {
+    "Bilgi İşlem Birimi": [
+      "ağ"
+    ],
+    "Hukuk İşleri Birimi": [
+      "hukuk",
+      "hukuki"
+    ]
+  },
+  "timing": 0.00958
+}

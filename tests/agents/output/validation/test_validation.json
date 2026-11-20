@@ -1,0 +1,93 @@
+{
+  "validation": {
+    "status": "invalid",
+    "issues": [
+      {
+        "field": "evrak_analysis.entities.kisi",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan 'Burcu KÖKSAL (Afyonkarahisar Belediye Başkanı)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.kisi",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan 'Moussa K. GATEA (Müşteki/Irak uyruklu)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.kisi",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan 'Fath TOPUZ (Araştırma Görevlisi)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.kurum",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan 'T.C. AFYONKARAHİSAR VALİLİĞİ' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.kurum",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan 'Afyonkarahisar Belediyesi' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.tarihler",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan '30/05/2024 (Belge Tarihi)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.tarihler",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan '24/05/2024 (Onay Tarihi)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.tarihler",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan '27/05/2024 (Örev Emri Tarihi)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.tarihler",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan '06/06/2024 (Son İfade Teslim Tarihi)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.sayilar",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan 'F.T.2024/2 (Valilik Sayısı)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.sayilar",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan '43556 (Örev Emri Sayısı)' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "evrak_analysis.entities.kanun",
+        "type": "entity_grounding_error",
+        "severity": "medium",
+        "message": "Çıkarılan '5271 sayılı CMK'nun 147. maddesi' değeri OCR metninde doğrulanamadı."
+      },
+      {
+        "field": "routing.selected_department",
+        "type": "routing_mismatch",
+        "severity": "high",
+        "message": "Belge, Valilik Makamı tarafından Belediyeye hitaben düzenlenen, ceza muhakemesi kanunu (CMK) kapsamında ifade istemi içeren resmi bir yazışmadır. Konusu hukuki/soruşturma sürecidir. 'Bilgi İşlem Birimi'ne yönlendirilmesi, belgenin içeriği (hukuki bildirim/çağrı) ile tamamen örtüşmemektedir. Bu tür belgeler genellikle İdari İşler, Hukuk İşleri veya ilgili soruşturma birimine (Emniyet/Valilik İdari İşler) yönlendirilmelidir."
+      },
+      {
+        "field": "rag.answer",
+        "type": "rag_grounding_error",
+        "severity": "medium",
+        "message": "RAG cevabı, CMK 147'nin şüpheli/sanık için olduğunu belirterek 'şikayetçi için yazılı ifade verme zorunluluğu veya yaptırımı öngörmez' diyerek belgedeki 'ifade vermemiş sayılma' uyarısını hukuki olarak geçersiz kılmaya çalışmıştır. Ancak, RAG kaynakları arasında CMK 169 (Kolluk görevlilerinin ifadesi) ve genel idari usul kuralları gibi şikayetçi/müşteki statüsündeki kişilerin ifade verme yükümlülüklerini veya idari soruşturmalarındaki 'ifade vermemiş sayılma' (kabul edilmiş sayılma) hükümlerini içeren diğer maddeler de mevcuttur. Özellikle idari soruşturma veya şikayet incelemelerinde 'ifade vermemiş sayılma' uygulaması, CMK'nın şüpheli haklarındaki maddelerle sınırlı değildir; idari usul kanunları veya ilgili özel kanunlarda şikayetçi/müşteki için de benzer yaptırımlar öngörülebilir. RAG cevabı, kaynaklardaki diğer maddeleri (özellikle idari süreçlere dair potansiyel dayanakları) göz ardı ederek tek bir maddeye (CMK 147) sıkışmış ve belgedeki uyarının mutlak olarak hukuki dayanağı olmadığını iddia ederek eksik/yanıltıcı bir sonuç üretmiştir. Belge bir 'Vali Yardımcısı' yazısıdır ve idari bir soruşturma/inceleme bağlamındadır."
+      }
+    ],
+    "confidence": 0.0
+  },
+  "timing": 7.95
+}

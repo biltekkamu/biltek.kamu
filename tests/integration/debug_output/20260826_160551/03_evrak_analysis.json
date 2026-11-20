@@ -1,0 +1,56 @@
+{
+  "document_type": {
+    "label": "bildirim_tebligat",
+    "confidence": 0.8715
+  },
+  "topic": "İfade İstemi ve İfade Verme Çağrısı",
+  "purpose": "Afyonkarahisar Valiliği nezdinde yürütülen bir soruşturma kapsamında, şikayetçi (müşteki) tarafından belediye yetkilisine yönelik iddiaların aydınlatılması amacıyla ilgili şahsın yazılı ifadesinin alınması.",
+  "intent": "ifade_verme_cagri",
+  "summary": "Afyonkarahisar Valiliği, Irak uyruklu Moussa K. GATEA'nın spor salonu açma sürecinde Afyonkarahisar Belediye Başkanı Burcu KÖKSAL'a yönelik 'ruhsat verilmediği' ve 'söz tutulmadığı' yönündeki iddialarını araştırmaktadır. Bu kapsamda, 5271 sayılı CMK'nın 147. maddesi uyarınca, ilgilinin en geç 6/06/2024 tarihine kadar yazılı ifadesinin Valilik Makamına gönderilmesi talep edilmekte, aksi halde ifade vermemiş sayılacağı uyarısı yapılmaktadır.",
+  "entities": {
+    "kisi": [
+      "Burcu KÖKSAL (Afyonkarahisar Belediye Başkanı)",
+      "Moussa K. GATEA (Müşteki/Irak uyruklu)",
+      "Fath TOPUZ (Araştırma Görevlisi/Vali Yardımcısı)"
+    ],
+    "kurum": [
+      "T.C. AFYONKARAHİSAR VALİLİĞİ",
+      "Afyonkarahisar Belediyesi"
+    ],
+    "tarihler": [
+      "30/05/2024 (Belge Tarihi)",
+      "24/05/2024 (Onay Tarihi)",
+      "27/05/2024 (Örev Emri Tarihi)",
+      "06/06/2024 (Son İfade Teslim Tarihi)"
+    ],
+    "sayi_no": [
+      "F.T.2024/2 (Belge Sayısı)",
+      "43556 (Örev Emri Sayısı)"
+    ],
+    "kanun_mevzuat": [
+      "5271 sayılı CMK (Ceza Muhakemesi Kanunu) 147. Madde"
+    ],
+    "konum": [
+      "Afyonkarahisar"
+    ]
+  },
+  "key_information": {
+    "sorusturma_konusu": "Irak uyruklu Moussa K. GATEA'nın spor salonu açma talebi ve belediyeden bekletilmesi/ruhsat alamaması iddiaları",
+    "hedef_kisi": "Afyonkarahisar Belediye Başkanı Burcu KÖKSAL",
+    "son_teslim_tarihi": "06/06/2024",
+    "teslim_yontemi": "Yazılı ifade gönderimi",
+    "hukuki_dayanak": "5271 sayılı CMK m. 147",
+    "sonuc_uyarisi": "Belirtilen tarih içinde ifade verilmezse 'ifade vermemiş sayılma' durumu söz konusu olacaktır."
+  },
+  "important_points": [
+    "İlgili kişi, avukatından hukuki yardım alabileceği konusunda bilgilendirilmiştir.",
+    "Belediyenin gerekli evrakları hazırlayıp teslim ettiği ancak alındı belgesi verilmediği iddia edilmektedir.",
+    "Valilik Makamının onayı ve örev emri doğrultusunda soruşturma yürütülmektedir.",
+    "İfadenin yazılı olarak ve belirtilen adrese gönderilmesi zorunludur."
+  ],
+  "missing_information": [
+    "İfadenin gönderileceği spesifik adres detayı (Metinde 'aşağıdaki adrese' denilerek geçilmiş ancak adres metin içinde yer almamaktadır).",
+    "İfadenin hangi formatlarda (örneğin; dilekçe formatı, özel form vb.) istendiğine dair detay."
+  ],
+  "analysis_confidence": 0.95
+}
